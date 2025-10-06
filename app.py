@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 import os
+import uvicorn
 
 # Your chatbot imports
 from src.helper import download_hugging_face_embeddings
@@ -56,3 +57,8 @@ async def get_index(request: Request):
 async def chat(msg: str = Form(...)):
     response = rag_chain.invoke({"input": msg})
     return JSONResponse({"answer": response["answer"]})
+
+if __name__ == "__main__":
+
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True)
