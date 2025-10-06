@@ -78,5 +78,5 @@ userInput.addEventListener("keypress", (e) => {
 
 // Add a welcome message
 window.addEventListener("load", () => {
-    addMessage("Hello! I am MedAid. How can I assist you today?", "bot");
+    addMessage("Hello! I am MediAid. How can I assist you today?", "bot");
 });
