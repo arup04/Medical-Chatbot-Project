@@ -13,9 +13,12 @@ from langchain.chains import create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from src.prompt import system_prompt
+from dotenv import load_dotenv
 
 # Initialize FastAPI app
 app = FastAPI()
+
+load_dotenv()
 
 # Static & templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
