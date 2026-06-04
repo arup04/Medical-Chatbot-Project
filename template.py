@@ -7,13 +7,23 @@ logging.basicConfig(level=logging.INFO, format='[%(asctime)s]: %(message)s:')
 
 list_of_files = [
     "src/__init__.py",
-    "src/helper.py",
+    "src/ingestion.py",
+    "src/preprocessing.py",
+    "src/vector_store.py",
+    "src/rag_pipeline.py",
+    "src/evaluation.py",
+    "src/logger.py",
+    "src/exception.py",
+    "evaluate_rag.py",
     "src/prompt.py",
     ".env",
+    "params.yaml",
     "setup.py",
     "app.py",
     "research/trials.ipynb",
     "requirements.txt",
+    "Dockerfile",
+    ".dockerignore",
 ]
 
 
