@@ -30,7 +30,7 @@ def evaluate_rag_pipeline(data_list: list, embeddings, model_name: str = None) -
         
         # Configure model
         if not model_name:
-            model_name = os.getenv("GROQ_MODEL_NAME", "llama-3.1-8b-instant")
+            model_name = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
             
         logging.info(f"Initializing ChatGroq with model: {model_name}")
         

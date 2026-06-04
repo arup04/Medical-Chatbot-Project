@@ -21,7 +21,7 @@ def main():
         rag_chain = create_rag_chain(vector_store=vector_store)
 
         # 2. Load evaluation dataset
-        dataset_path = "files/ragas_medical_evaluation_dataset.json"
+        dataset_path = "evaluation/ragas_medical_evaluation_dataset.json"
         if not os.path.exists(dataset_path):
             raise FileNotFoundError(f"Evaluation dataset not found at {dataset_path}")
             
@@ -65,7 +65,7 @@ def main():
         df_results = evaluate_rag_pipeline(evaluation_samples, embeddings)
 
         # 5. Save and display results
-        output_csv = "files/ragas_evaluation_results.csv"
+        output_csv = "evaluation/ragas_evaluation_results.csv"
         os.makedirs(os.path.dirname(output_csv), exist_ok=True)
         df_results.to_csv(output_csv, index=False)
         logging.info(f"Evaluation results successfully saved to {output_csv}")
