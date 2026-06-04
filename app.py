@@ -1,30 +1,23 @@
-# app.py
 from fastapi import FastAPI, Request, Form
 from fastapi.responses import JSONResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
-
-# Your chatbot imports
 from src.helper import download_hugging_face_embeddings
 from langchain_pinecone import PineconeVectorStore
 from langchain_groq import ChatGroq
-from langchain.chains import create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_classic.chains import create_retrieval_chain
+from langchain_classic.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from src.prompt import system_prompt
 from dotenv import load_dotenv
 
-# Initialize FastAPI app
 app = FastAPI()
-
 load_dotenv()
 
-# Static & templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# Chatbot setup
 embeddings = download_hugging_face_embeddings()
 index_name = "medibot"
 docsearch = PineconeVectorStore.from_existing_index(
@@ -32,12 +25,11 @@ docsearch = PineconeVectorStore.from_existing_index(
     embedding=embeddings
 )
 retriever = docsearch.as_retriever(search_type="similarity", search_kwargs={"k": 3})
-chatModel = ChatGroq(model="openai/gpt-oss-120b")
+chatModel = ChatGroq(model="openai/gpt-oss-120b")  
 prompt = ChatPromptTemplate.from_messages([("system", system_prompt), ("human", "{input}")])
 question_answer_chain = create_stuff_documents_chain(chatModel, prompt)
 rag_chain = create_retrieval_chain(retriever, question_answer_chain)
 
-# Routes
 @app.get("/", response_class=HTMLResponse)
 async def get_index(request: Request):
     return templates.TemplateResponse("chat.html", {"request": request})
