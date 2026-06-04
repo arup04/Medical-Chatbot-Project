@@ -33,3 +33,7 @@ async def get_index(request: Request):
 async def chat(msg: str = Form(...)):
     response = rag_chain.invoke({"input": msg})
     return JSONResponse({"answer": response["answer"]})
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app:app", host="0.0.0.0", port=8080, reload=True)
