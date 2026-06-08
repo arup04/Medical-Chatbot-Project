@@ -46,23 +46,26 @@ from src.hybrid_retriever import HybridThresholdRetriever
 # 2. Build retrievers
 pinecone_retriever = vector_store.as_retriever(
     search_type="similarity_score_threshold", 
-    search_kwargs={"score_threshold": 0.78, "k": 3}
+    search_kwargs={"score_threshold": 0.78, "k": 6}
 )
 
 if cached_docs:
     bm25_retriever = BM25Retriever.from_documents(cached_docs)
-    bm25_retriever.k = 3
+    bm25_retriever.k = 6
     # Combine BM25 sparse search and Pinecone dense search
     ensemble_retriever = EnsembleRetriever(
         retrievers=[bm25_retriever, pinecone_retriever],
         weights=[0.5, 0.5]
     )
-    retriever = HybridThresholdRetriever(
+    base_retriever = HybridThresholdRetriever(
         ensemble_retriever=ensemble_retriever,
         pinecone_retriever=pinecone_retriever
     )
 else:
-    retriever = pinecone_retriever
+    base_retriever = pinecone_retriever
+
+from src.reranker import get_reranked_retriever
+retriever = get_reranked_retriever(base_retriever, top_n=3)
 
 # 3. Create the RAG chain
 rag_chain = create_rag_chain(retriever=retriever)
@@ -75,9 +78,15 @@ async def stream_response(msg: str):
                 # Extract documents and metadata
                 docs = []
                 for doc in chunk["context"]:
+                    clean_metadata = {}
+                    for k, v in doc.metadata.items():
+                        if hasattr(v, "item"): # Convert numpy types to native Python types
+                            clean_metadata[k] = v.item()
+                        else:
+                            clean_metadata[k] = v
                     docs.append({
                         "page_content": doc.page_content,
-                        "metadata": doc.metadata
+                        "metadata": clean_metadata
                     })
                 yield f"[CONTEXT] {json.dumps(docs)}\n"
             if "answer" in chunk:

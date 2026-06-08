@@ -15,4 +15,5 @@ datasets
 pandas
 boto3
 rank_bm25
+flashrank
 -e .

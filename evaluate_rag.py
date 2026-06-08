@@ -35,24 +35,27 @@ def main():
 
         pinecone_retriever = vector_store.as_retriever(
             search_type="similarity_score_threshold", 
-            search_kwargs={"score_threshold": 0.78, "k": 3}
+            search_kwargs={"score_threshold": 0.78, "k": 6}
         )
         
         if cached_docs:
             bm25_retriever = BM25Retriever.from_documents(cached_docs)
-            bm25_retriever.k = 3
+            bm25_retriever.k = 6
             ensemble_retriever = EnsembleRetriever(
                 retrievers=[bm25_retriever, pinecone_retriever],
                 weights=[0.5, 0.5]
             )
-            retriever = HybridThresholdRetriever(
+            base_retriever = HybridThresholdRetriever(
                 ensemble_retriever=ensemble_retriever,
                 pinecone_retriever=pinecone_retriever
             )
             logging.info("Hybrid Search (EnsembleRetriever + HybridThresholdRetriever) successfully configured for evaluation.")
         else:
-            retriever = pinecone_retriever
+            base_retriever = pinecone_retriever
             logging.warning("Preprocessed chunks cache not found. Evaluation falling back to dense Pinecone retrieval.")
+            
+        from src.reranker import get_reranked_retriever
+        retriever = get_reranked_retriever(base_retriever, top_n=3)
             
         rag_chain = create_rag_chain(retriever=retriever)
 
