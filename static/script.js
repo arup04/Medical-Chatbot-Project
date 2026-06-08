@@ -19,6 +19,13 @@ const referencesCollapsibleBody = document.getElementById("references-collapsibl
 const toastContainer = document.getElementById("toast-container");
 const micBtn = document.getElementById("mic-btn");
 
+// --- Scroll Helper ---
+function scrollToBottom() {
+    setTimeout(() => {
+        chatViewport.scrollTop = chatViewport.scrollHeight;
+    }, 50);
+}
+
 // --- State Variables ---
 let chatSessions = JSON.parse(localStorage.getItem("mediAidSessions")) || [];
 let activeSessionId = localStorage.getItem("mediAidActiveSessionId") || null;
@@ -81,31 +88,43 @@ function showToast(message, type = "success") {
 }
 
 // --- Session History Helpers ---
-function createNewSession(showNotification = true) {
-    // If current session is empty, reuse it
-    const active = chatSessions.find(s => s.id === activeSessionId);
-    if (active && active.messages.length === 0) {
-        if (showNotification) showToast("Consultation restarted.", "success");
-        return;
+async function createNewSession(showNotification = true) {
+    try {
+        const formData = new FormData();
+        formData.append("title", "New Consultation");
+        
+        const response = await fetch("/sessions", {
+            method: "POST",
+            body: formData
+        });
+        if (response.ok) {
+            const newSession = await response.json();
+            activeSessionId = newSession.id;
+            saveSessions();
+            await fetchSessions();
+            await loadActiveSession();
+            if (showNotification) showToast("New consultation session started.", "success");
+        }
+    } catch (err) {
+        console.error("Failed to create new session:", err);
+        showToast("Failed to create new session.", "error");
     }
-    
-    const newSession = {
-        id: "session_" + Date.now(),
-        title: "New Consultation",
-        messages: [],
-        contexts: [] 
-    };
-    chatSessions.unshift(newSession);
-    activeSessionId = newSession.id;
-    saveSessions();
-    renderSidebarSessions();
-    loadActiveSession();
-    if (showNotification) showToast("New consultation session started.", "success");
 }
 
 function saveSessions() {
-    localStorage.setItem("mediAidSessions", JSON.stringify(chatSessions));
     localStorage.setItem("mediAidActiveSessionId", activeSessionId);
+}
+
+async function fetchSessions() {
+    try {
+        const response = await fetch("/sessions");
+        if (response.ok) {
+            chatSessions = await response.json();
+            renderSidebarSessions();
+        }
+    } catch (err) {
+        console.error("Failed to load sessions:", err);
+    }
 }
 
 function renderSidebarSessions() {
@@ -122,59 +141,77 @@ function renderSidebarSessions() {
         `;
         
         // Handle delete session clicks
-        item.querySelector(".delete-session-btn").addEventListener("click", (e) => {
+        item.querySelector(".delete-session-btn").addEventListener("click", async (e) => {
             e.stopPropagation();
-            chatSessions = chatSessions.filter(s => s.id !== session.id);
-            if (activeSessionId === session.id) {
-                activeSessionId = chatSessions.length > 0 ? chatSessions[0].id : null;
+            try {
+                const response = await fetch(`/sessions/${session.id}`, { method: "DELETE" });
+                if (response.ok) {
+                    chatSessions = chatSessions.filter(s => s.id !== session.id);
+                    if (activeSessionId === session.id) {
+                        activeSessionId = chatSessions.length > 0 ? chatSessions[0].id : null;
+                    }
+                    saveSessions();
+                    if (chatSessions.length === 0) {
+                        await createNewSession(false);
+                    } else {
+                        renderSidebarSessions();
+                        await loadActiveSession();
+                    }
+                    showToast("Consultation thread deleted.", "success");
+                }
+            } catch (err) {
+                console.error("Failed to delete session:", err);
+                showToast("Failed to delete session.", "error");
             }
-            saveSessions();
-            if (chatSessions.length === 0) {
-                createNewSession();
-            } else {
-                renderSidebarSessions();
-                loadActiveSession();
-            }
-            showToast("Consultation thread deleted.", "success");
         });
         
-        item.addEventListener("click", () => {
+        item.addEventListener("click", async () => {
             activeSessionId = session.id;
             saveSessions();
             renderSidebarSessions();
-            loadActiveSession();
+            await loadActiveSession();
         });
         
         chatHistoryList.appendChild(item);
     });
 }
 
-function loadActiveSession() {
-    const session = chatSessions.find(s => s.id === activeSessionId);
-    if (!session || session.messages.length === 0) {
+async function loadActiveSession() {
+    if (!activeSessionId) {
         welcomeContainer.style.display = "flex";
         messagesContainer.style.display = "none";
         emptyCitationsState.style.display = "flex";
         citationsContent.style.display = "none";
         messagesContainer.innerHTML = "";
-    } else {
-        welcomeContainer.style.display = "none";
-        messagesContainer.style.display = "flex";
-        messagesContainer.innerHTML = "";
-        
-        session.messages.forEach(msg => {
-            renderMessage(msg.text, msg.sender);
-        });
-        
-        const botMessages = session.messages.filter(m => m.sender === "bot");
-        if (botMessages.length > 0 && session.contexts.length > 0) {
-            renderCitations(session.contexts[session.contexts.length - 1]);
-        } else {
-            emptyCitationsState.style.display = "flex";
-            citationsContent.style.display = "none";
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/sessions/${activeSessionId}/messages`);
+        if (response.ok) {
+            const messages = await response.json();
+            messagesContainer.innerHTML = "";
+            
+            if (messages.length === 0) {
+                welcomeContainer.style.display = "flex";
+                messagesContainer.style.display = "none";
+                emptyCitationsState.style.display = "flex";
+                citationsContent.style.display = "none";
+            } else {
+                welcomeContainer.style.display = "none";
+                messagesContainer.style.display = "flex";
+                
+                messages.forEach(msg => {
+                    renderMessage(msg.text, msg.sender);
+                });
+                
+                emptyCitationsState.style.display = "flex";
+                citationsContent.style.display = "none";
+            }
+            scrollToBottom();
         }
-        
-        chatViewport.scrollTop = chatViewport.scrollHeight;
+    } catch (err) {
+        console.error("Failed to load active session:", err);
     }
     
     userInput.value = "";
@@ -315,7 +352,7 @@ function renderMessage(text, sender, isSkeleton = false) {
     
     row.appendChild(msgBubble);
     messagesContainer.appendChild(row);
-    chatViewport.scrollTop = chatViewport.scrollHeight;
+    scrollToBottom();
     
     return msgBubble;
 }
@@ -438,18 +475,11 @@ async function handleFormSubmit() {
     sendBtn.disabled = true;
     
     if (!activeSessionId) {
-        createNewSession();
+        await createNewSession();
     }
     
     welcomeContainer.style.display = "none";
     messagesContainer.style.display = "flex";
-    
-    const session = chatSessions.find(s => s.id === activeSessionId);
-    session.messages.push({ text: text, sender: "user" });
-    
-    if (session.messages.length === 1) {
-        session.title = text.length > 25 ? text.substring(0, 25) + "..." : text;
-    }
     
     renderMessage(text, "user");
     
@@ -458,6 +488,7 @@ async function handleFormSubmit() {
     
     const formData = new FormData();
     formData.append("msg", text);
+    formData.append("session_id", activeSessionId);
     
     try {
         const response = await fetch("/get", {
@@ -494,6 +525,13 @@ async function handleFormSubmit() {
                     const contextsData = JSON.parse(line.substring(10));
                     currentRetrievedContexts = contextsData;
                     renderCitations(contextsData);
+                } else if (line.startsWith("[SESSION_TITLE] ")) {
+                    const newTitle = line.substring(16);
+                    const session = chatSessions.find(s => s.id === activeSessionId);
+                    if (session) {
+                        session.title = newTitle;
+                    }
+                    await fetchSessions();
                 } else if (line.startsWith("[ANSWER] ")) {
                     if (isFirstToken) {
                         // Clear skeleton loader on receiving first real text token
@@ -505,6 +543,9 @@ async function handleFormSubmit() {
                     botResponseText += token;
                     botBubble.innerHTML = formatMessageText(botResponseText);
                     botBubble.appendChild(cursor);
+                    
+                    // Auto-scroll viewport as text streams in
+                    scrollToBottom();
                 } else if (line.startsWith("[ERROR] ")) {
                     throw new Error(line.substring(8));
                 }
@@ -522,11 +563,6 @@ async function handleFormSubmit() {
         // Inject action panel onto row
         const row = botBubble.closest(".bot-row");
         injectMessageActions(row, botBubble, botResponseText);
-        
-        session.messages.push({ text: botResponseText, sender: "bot" });
-        session.contexts.push(currentRetrievedContexts);
-        saveSessions();
-        renderSidebarSessions();
         
     } catch (err) {
         console.error("Stream failed:", err);
@@ -617,7 +653,7 @@ micBtn.addEventListener("click", () => {
 });
 
 // --- Initialization ---
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
     // Initialize speech
     initSpeechRecognition();
     
@@ -626,6 +662,12 @@ window.addEventListener("DOMContentLoaded", () => {
         window.speechSynthesis.getVoices();
     }
     
-    renderSidebarSessions();
-    createNewSession(false); // Always start with a fresh new consultation session on load
+    await fetchSessions();
+    
+    // If active session ID is stored and exists in current database sessions, load it.
+    if (activeSessionId && chatSessions.some(s => s.id === activeSessionId)) {
+        await loadActiveSession();
+    } else {
+        await createNewSession(false);
+    }
 });

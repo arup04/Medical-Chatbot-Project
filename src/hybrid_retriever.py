@@ -15,9 +15,12 @@ class HybridThresholdRetriever(BaseRetriever):
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun = None
     ) -> List[Document]:
+        # Clean query: normalize all whitespace (including non-breaking spaces \xa0) to standard spaces
+        clean_query = " ".join(query.split())
+        
         # 1. Run pinecone retriever first to check for threshold matches
         dense_docs = self.pinecone_retriever.invoke(
-            query, 
+            clean_query, 
             config={"callbacks": run_manager.get_child()} if run_manager else None
         )
         if not dense_docs:
@@ -26,21 +29,24 @@ class HybridThresholdRetriever(BaseRetriever):
         
         # 2. If we have matches, get the ensemble results
         return self.ensemble_retriever.invoke(
-            query, 
+            clean_query, 
             config={"callbacks": run_manager.get_child()} if run_manager else None
         )
 
     async def _aget_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun = None
     ) -> List[Document]:
+        # Clean query: normalize all whitespace (including non-breaking spaces \xa0) to standard spaces
+        clean_query = " ".join(query.split())
+        
         # Async implementation
         dense_docs = await self.pinecone_retriever.ainvoke(
-            query, 
+            clean_query, 
             config={"callbacks": run_manager.get_child()} if run_manager else None
         )
         if not dense_docs:
             return []
         return await self.ensemble_retriever.ainvoke(
-            query, 
+            clean_query, 
             config={"callbacks": run_manager.get_child()} if run_manager else None
         )

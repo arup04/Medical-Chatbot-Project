@@ -259,7 +259,9 @@ body {
 .main-content {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .disclaimer-banner {
@@ -288,6 +290,7 @@ body {
     padding: 24px;
     overflow-y: auto;
     position: relative;
+    min-height: 0;
 }
 
 /* --- Empty Welcome State --- */
