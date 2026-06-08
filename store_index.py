@@ -33,6 +33,20 @@ def main():
     minimal_docs = filter_to_minimal_docs(extracted_doc)
     text_chunks = text_split(minimal_docs)
 
+    # Cache preprocessed text chunks to a local JSON file for BM25 loading
+    import json
+    chunks_data = []
+    for chunk in text_chunks:
+        chunks_data.append({
+            "page_content": chunk.page_content,
+            "metadata": chunk.metadata
+        })
+    cache_path = "evaluation/preprocessed_chunks.json"
+    os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+    with open(cache_path, "w", encoding="utf-8") as f:
+        json.dump(chunks_data, f, ensure_ascii=False, indent=2)
+    logging.info(f"Cached {len(chunks_data)} chunks to {cache_path} for BM25 retrieval.")
+
     # Vector Store
     logging.info("Initializing/Connecting to vector store...")
     embeddings = download_hugging_face_embeddings()

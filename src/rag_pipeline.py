@@ -8,9 +8,9 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_core.prompts import ChatPromptTemplate
 from src.prompt import system_prompt
 
-def create_rag_chain(vector_store, model_name: str = None):
+def create_rag_chain(retriever, model_name: str = None):
     """
-    Creates and returns a retrieval-augmented generation (RAG) chain.
+    Creates and returns a retrieval-augmented generation (RAG) chain using the passed retriever.
     """
     try:
         logging.info("Initializing RAG pipeline components...")
@@ -21,10 +21,6 @@ def create_rag_chain(vector_store, model_name: str = None):
         
         logging.info(f"Using Groq Chat Model: {model_name}")
         chat_model = ChatGroq(model=model_name)
-        
-        # Configure retriever
-        logging.info("Configuring vector store retriever...")
-        retriever = vector_store.as_retriever(search_type="similarity", search_kwargs={"k": 3})
         
         # Configure prompt
         logging.info("Creating ChatPromptTemplate from prompt structure...")

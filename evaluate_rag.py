@@ -13,12 +13,48 @@ def main():
     try:
         logging.info("Starting evaluation orchestration script...")
 
-        # 1. Initialize RAG pipeline
+        # 1. Initialize RAG pipeline with Hybrid Search
+        from langchain_community.retrievers import BM25Retriever
+        from langchain.retrievers import EnsembleRetriever
+        from langchain_core.documents import Document
+        
         logging.info("Loading embeddings and connecting to vector store...")
         embeddings = download_hugging_face_embeddings()
         index_name = "medibot"
         vector_store = get_vector_store(index_name=index_name, embeddings=embeddings)
-        rag_chain = create_rag_chain(vector_store=vector_store)
+        
+        # Load cached chunks for local BM25 sparse index
+        chunks_path = "evaluation/preprocessed_chunks.json"
+        cached_docs = []
+        if os.path.exists(chunks_path):
+            with open(chunks_path, "r", encoding="utf-8") as f:
+                cached_data = json.load(f)
+            cached_docs = [Document(page_content=d["page_content"], metadata=d["metadata"]) for d in cached_data]
+        
+        from src.hybrid_retriever import HybridThresholdRetriever
+
+        pinecone_retriever = vector_store.as_retriever(
+            search_type="similarity_score_threshold", 
+            search_kwargs={"score_threshold": 0.78, "k": 3}
+        )
+        
+        if cached_docs:
+            bm25_retriever = BM25Retriever.from_documents(cached_docs)
+            bm25_retriever.k = 3
+            ensemble_retriever = EnsembleRetriever(
+                retrievers=[bm25_retriever, pinecone_retriever],
+                weights=[0.5, 0.5]
+            )
+            retriever = HybridThresholdRetriever(
+                ensemble_retriever=ensemble_retriever,
+                pinecone_retriever=pinecone_retriever
+            )
+            logging.info("Hybrid Search (EnsembleRetriever + HybridThresholdRetriever) successfully configured for evaluation.")
+        else:
+            retriever = pinecone_retriever
+            logging.warning("Preprocessed chunks cache not found. Evaluation falling back to dense Pinecone retrieval.")
+            
+        rag_chain = create_rag_chain(retriever=retriever)
 
         # 2. Load evaluation dataset
         dataset_path = "evaluation/ragas_medical_evaluation_dataset.json"
