@@ -1,27 +1,188 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Medical Chatbot</title>
+    <title>MediAid AI - Clinical RAG Assistant</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
-
 </head>
 <body>
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>MediAid AI🤖</h2>
-        </div>
+    <div class="toast-container" id="toast-container"></div>
+    <div class="app-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <span class="logo-icon">🤖</span>
+                    <span class="logo-text">MediAid <span class="logo-accent">AI</span></span>
+                </div>
+                <button class="new-chat-btn" id="new-chat-btn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    New Chat
+                </button>
+            </div>
+            
+            <div class="sidebar-body">
+                <h4 class="section-title">Recent Consultations</h4>
+                <div class="chat-history-list" id="chat-history-list">
+                    <!-- History items injected here -->
+                </div>
+            </div>
 
-        <div class="chat-body" id="chat-body">
-            <!-- Chat messages will appear here -->
-        </div>
+            <div class="sidebar-footer">
+                <button class="footer-action-btn" id="arch-modal-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                    Pipeline Architecture
+                </button>
+                <div class="theme-toggle-container">
+                    <span class="theme-label">Theme Mode</span>
+                    <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme mode">
+                        <span class="toggle-icon sun">☀️</span>
+                        <span class="toggle-icon moon">🌙</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
 
-        <div class="chat-footer">
-            <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
-            <button id="send-btn">Send</button>
+        <!-- Main Chat Area -->
+        <main class="main-content">
+            <!-- Disclaimer Banner -->
+            <div class="disclaimer-banner">
+                <span class="warning-icon">⚠️</span>
+                <p class="disclaimer-text"><strong>Educational Purposes Only:</strong> This chatbot is grounded in medical textbooks but does not substitute for professional medical advice, diagnosis, or treatment.</p>
+            </div>
+
+            <div class="chat-viewport">
+                <!-- Welcome/Empty State -->
+                <div class="welcome-container" id="welcome-container">
+                    <div class="welcome-header">
+                        <h1>Expert Clinical Knowledge, Instantly.</h1>
+                        <p>Ask a question based on "The Gale Encyclopedia of Medicine". Sources will be cited below responses.</p>
+                    </div>
+                    <div class="suggestions-grid">
+                        <button class="suggestion-card" data-question="What is Type 2 Diabetes?">
+                            <span class="suggestion-tag">Endocrinology</span>
+                            <span class="suggestion-text">What is Type 2 Diabetes?</span>
+                        </button>
+                        <button class="suggestion-card" data-question="What are COPD symptoms?">
+                            <span class="suggestion-tag">Pulmonology</span>
+                            <span class="suggestion-text">What are COPD symptoms?</span>
+                        </button>
+                        <button class="suggestion-card" data-question="Explain hypertension treatment.">
+                            <span class="suggestion-tag">Cardiology</span>
+                            <span class="suggestion-text">Explain hypertension treatment.</span>
+                        </button>
+                        <button class="suggestion-card" data-question="What are the side effects of Metformin?">
+                            <span class="suggestion-tag">Pharmacology</span>
+                            <span class="suggestion-text">What are the side effects of Metformin?</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat messages list -->
+                <div class="chat-messages-container" id="chat-messages-container" style="display: none;">
+                    <!-- Messages will be dynamically rendered here -->
+                </div>
+
+                <!-- Footer input -->
+                <div class="chat-input-wrapper">
+                    <div class="chat-input-container">
+                        <textarea id="user-input" placeholder="Ask MediAid..." rows="1" autocomplete="off"></textarea>
+                        <button id="mic-btn" class="mic-btn" type="button" title="Voice Input (Speech to Text)" style="background: transparent; border: none; color: var(--text-secondary); width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; border-radius: 50%; margin-right: 8px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        </button>
+                        <button id="send-btn" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Right Citations Panel -->
+        <aside class="citations-panel" id="citations-panel">
+            <div class="panel-header">
+                <h3>📖 Retrieved Context</h3>
+            </div>
+            <div class="panel-body">
+                <div class="empty-citations-state" id="empty-citations-state">
+                    <div class="empty-icon">📄</div>
+                    <p>Submit a question to view sourced passages and RAG relevance scores here.</p>
+                </div>
+                
+                <div class="citations-content" id="citations-content" style="display: none;">
+                    <div class="sources-list-section">
+                        <h4>Verified Textbook Sources</h4>
+                        <div class="sources-list" id="sources-list">
+                            <!-- Injected source cards -->
+                        </div>
+                    </div>
+                    
+                    <div class="reference-detail-section">
+                        <button class="collapsible-header" id="references-toggle-btn">
+                            <span>View Sourced Text Passages</span>
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </button>
+                        <div class="collapsible-body" id="references-collapsible-body">
+                            <div class="text-chunks-list" id="text-chunks-list">
+                                <!-- Injected text chunks -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Pipeline Architecture Modal -->
+    <div class="modal-overlay" id="arch-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>MediAid RAG Pipeline Architecture</h3>
+                <button class="close-modal-btn" id="close-modal-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="flowchart-container">
+                    <div class="flow-step">
+                        <span class="step-num">1</span>
+                        <div class="step-details">
+                            <strong>Ingestion & S3 Storage</strong>
+                            <p>Fetches textbook PDFs dynamically from AWS S3 storage buckets via Boto3.</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-step">
+                        <span class="step-num">2</span>
+                        <div class="step-details">
+                            <strong>Chunking & Preprocessing</strong>
+                            <p>Normalizes content, maps metadata, and splits documents using RecursiveCharacterTextSplitter.</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-step">
+                        <span class="step-num">3</span>
+                        <div class="step-details">
+                            <strong>Dense Vector Ingestion</strong>
+                            <p>Encodes chunks into 384-dim semantic embeddings via Hugging Face Models and saves to Pinecone Serverless.</p>
+                        </div>
+                    </div>
+                    <div class="flow-arrow">⬇️</div>
+                    <div class="flow-step">
+                        <span class="step-num">4</span>
+                        <div class="step-details">
+                            <strong>Retrieval & Generation</strong>
+                            <p>Performs cosine similarity search on query, retrieves top context documents, and generates a structured answer using Groq.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-    <script src="/static/script.js"></script> 
+
+    <script src="/static/script.js"></script>
 </body>
 </html>
