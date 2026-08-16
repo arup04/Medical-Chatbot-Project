@@ -1,0 +1,5 @@
+stage,recall@5,precision@5,answer_correctness,decision
+Stage 1 — Naive dense retrieval,0.9,0.22,0.438095156,KEEP
+Stage 2 — Thresholded dense retrieval,0.9,0.22,0.648367993,KEEP
+Stage 3 — Hybrid dense + BM25 retrieval,0.9,0.22,0.682810135,KEEP
+Stage 4 — Hybrid retrieval + reranker,0.8,0.16,0.450354586,REJECT — retain Stage 3 — Hybrid dense + BM25 retrieval

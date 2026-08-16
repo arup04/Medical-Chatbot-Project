@@ -16,4 +16,6 @@ pandas
 boto3
 rank_bm25
 flashrank
+langchain-sarvam
+json-repair
 -e .

@@ -17,7 +17,7 @@ def create_rag_chain(retriever, model_name: str = None):
         
         # Determine model name
         if not model_name:
-            model_name = os.getenv("GROQ_MODEL_NAME", "openai/gpt-oss-120b")
+            model_name = os.getenv("GROQ_MODEL_NAME", "llama-3.3-70b-versatile")
         
         logging.info(f"Using Groq Chat Model: {model_name}")
         chat_model = ChatGroq(model=model_name)
