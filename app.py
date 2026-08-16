@@ -64,8 +64,8 @@ if cached_docs:
 else:
     base_retriever = pinecone_retriever
 
-from src.reranker import get_reranked_retriever
-retriever = get_reranked_retriever(base_retriever, top_n=3)
+# 2. Assign winning Stage 3 Hybrid Retriever
+retriever = base_retriever
 
 # 3. Create the RAG chain
 rag_chain = create_rag_chain(retriever=retriever)

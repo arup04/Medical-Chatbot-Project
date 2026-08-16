@@ -1,20 +1,18 @@
-# 🩺 Medical Chatbot — Hybrid RAG Pipeline with FlashRank Reranking & Interactive UI
+# 🩺 Medical Chatbot — Hybrid RAG Pipeline & Interactive UI
 
-An end-to-end, production-ready **Medical AI Assistant** built with a multi-stage Retrieval-Augmented Generation (RAG) architecture. The system processes and indexes medical domain knowledge (e.g., the *Gale Encyclopedia of Medicine*), leveraging **Pinecone dense vector search**, **local BM25 sparse retrieval**, **FlashRank cross-encoder reranking**, **Groq LLM inference**, **FastAPI real-time streaming**, and continuous quality evaluation via the **RAGAS framework**.
-
-> **Branch Note**: You are currently on the `reranking_improvements` branch, which introduces **FlashRank Cross-Encoder Contextual Compression & Reranking** on top of **Hybrid Search (Dense + Sparse)** and the **FastAPI Streaming Web UI**.
+An end-to-end, production-ready **Medical AI Assistant** built with a multi-stage Retrieval-Augmented Generation (RAG) architecture. The system processes and indexes medical domain knowledge (e.g., the *Gale Encyclopedia of Medicine*), leveraging **Pinecone dense vector search**, **local BM25 sparse retrieval**, **Sarvam AI (`sarvam-105b`) generator**, **FastAPI real-time streaming**, and continuous quality evaluation via the **RAGAS framework**.
 
 ---
 
 ## 🌟 Key Features
 
-- **⚡ FlashRank Cross-Encoder Reranking**: Integrates `FlashrankRerank` (`ms-marco-MiniLM-L-6-v2`) wrapped inside LangChain's `ContextualCompressionRetriever` (`src/reranker.py`) to re-score and select the top 3 most relevant context chunks from hybrid search candidate results (`k=6`), significantly boosting Context Precision.
 - **🔀 Hybrid Search (Dense + Sparse)**: Combines dense semantic embeddings (`sentence-transformers/all-MiniLM-L6-v2`) with sparse keyword matching (`BM25Retriever`) via an `EnsembleRetriever` with balanced 50/50 weighting.
+- **🇮🇳 Sarvam AI Generation**: Powered by Sarvam AI (`sarvam-105b` via `langchain-sarvam`) for high-fidelity, grounded clinical responses.
 - **🎯 Dynamic Out-of-Domain Filtering**: Employs a custom `HybridThresholdRetriever` enforcing a dense Pinecone similarity threshold (`0.78`) to reject out-of-domain medical queries safely.
 - **📡 Real-Time Token & Context Streaming**: FastAPI backend using `StreamingResponse` to broadcast live token streams (`[ANSWER]`) and retrieved source context metadata (`[CONTEXT]`).
 - **🖥️ Interactive Web UI**: Custom dark-themed web frontend (`templates/chat.html`, `static/style.css`, `static/script.js`) featuring real-time message streaming, source citations, and context drawer.
 - **☁️ Cloud Ingestion Pipeline**: Automated AWS S3 PDF downloading via `boto3` with local storage fallback (`Data/Medical_book.pdf`).
-- **📊 RAGAS Quality Evaluation**: Production evaluation suite measuring **Faithfulness**, **Answer Relevancy**, **Context Precision**, and **Context Recall** with built-in `InMemoryRateLimiter`.
+- **📊 RAGAS Quality Evaluation Suite**: Comprehensive multi-stage benchmarking and checkpoints located in `Evaluation/`.
 
 ---
 
@@ -31,24 +29,23 @@ graph TD
         F -->|all-MiniLM-L6-v2| G[(Pinecone Vector DB)]
     end
 
-    subgraph Hybrid Retrieval & FlashRank Reranking Pipeline
+    subgraph Hybrid Retrieval Pipeline
         H[User Query] --> I[src/hybrid_retriever.py]
         E -->|BM25 Sparse| I
         G -->|Dense Similarity Threshold 0.78| I
-        I -->|Top 6 Candidates| J[src/reranker.py]
-        J -->|FlashRank Cross-Encoder| K[Top-3 Re-ranked Chunks]
+        I -->|Top Retrieved Chunks| K[Hybrid Context Documents]
     end
 
     subgraph LLM Generation & Web Layer
         K --> L[src/rag_pipeline.py]
-        M[Groq LLM] <--> L
+        M[Sarvam AI LLM] <--> L
         L <--> N[app.py / FastAPI Server]
         N <-->|StreamingResponse| O[Interactive UI / Web Browser]
     end
 
     subgraph Evaluation Suite
-        K -.-> P[evaluate_rag.py / src/evaluation.py]
-        P -.->|RAGAS Metrics| Q[ragas_evaluation_results.csv]
+        K -.-> P[Evaluation/rag_evaluation_sarvam.ipynb]
+        P -.->|RAGAS Metrics| Q[Evaluation/rag_stage_comparison_sarvam.csv]
     end
 ```
 
@@ -60,25 +57,26 @@ graph TD
 .
 ├── Data/                             # Local raw PDF storage directory
 │   └── Medical_book.pdf              # Source medical textbook
-├── evaluation/                       # RAGAS evaluation suite & benchmarks
-│   ├── RAGAS_DATASET_README.md       # Dataset metadata & specifications
+├── Evaluation/                       # RAGAS evaluation suite & benchmarks
+│   ├── final_rag_application_audit_sarvam.csv
 │   ├── preprocessed_chunks.json      # Cached chunks for local BM25 index
-│   ├── ragas_evaluation_results.csv  # Output metrics CSV report
+│   ├── rag_evaluation_sarvam.ipynb   # Resumable Sarvam AI benchmark notebook
+│   ├── rag_stage_comparison_sarvam.csv
 │   ├── ragas_medical_evaluation_dataset.csv
 │   └── ragas_medical_evaluation_dataset.json
+├── Guardrails/                       # Medical AI guardrails & safety policies
+│   └── README.md
 ├── research/                         # Jupyter notebook experiments & trials
 │   └── trials.ipynb
 ├── src/                              # Core modular Python packages
 │   ├── __init__.py
-│   ├── evaluation.py                 # RAGAS metric executor with rate limiting & LLM binding
 │   ├── exception.py                  # Custom exception handling with line tracing
 │   ├── hybrid_retriever.py           # HybridThresholdRetriever (Dense threshold + BM25 Ensemble)
 │   ├── ingestion.py                  # AWS S3 downloader & PDF DirectoryLoader
 │   ├── logger.py                     # Centralized logging setup
 │   ├── preprocessing.py              # Minimal metadata filtering & character chunking
 │   ├── prompt.py                     # System prompt templates
-│   ├── rag_pipeline.py               # RAG chain construction (ChatGroq + ChatPromptTemplate)
-│   ├── reranker.py                   # FlashRank cross-encoder contextual compression retriever
+│   ├── rag_pipeline.py               # RAG chain construction (ChatSarvam + ChatPromptTemplate)
 │   └── vector_store.py               # Pinecone index management & HuggingFace embeddings
 ├── static/                           # UI assets
 │   ├── app.png                       # Application screenshot
@@ -87,7 +85,6 @@ graph TD
 ├── templates/                        # Frontend HTML templates
 │   └── chat.html                     # Main interactive chatbot web interface
 ├── app.py                            # FastAPI application server & streaming endpoints
-├── evaluate_rag.py                   # Orchestration script to run RAGAS benchmark evaluation
 ├── requirements.txt                  # Python dependencies declaration
 ├── setup.py                          # Package installation configuration
 └── store_index.py                    # Data ingestion & indexing entry point script
@@ -98,12 +95,11 @@ graph TD
 ## 💻 Tech Stack
 
 - **Framework**: LangChain `v0.3+`, FastAPI, Uvicorn, Pydantic, Jinja2.
-- **LLM Provider**: Groq API (`openai/gpt-oss-120b` / `llama-3.3-70b-versatile`).
+- **LLM Provider**: Sarvam AI (`sarvam-105b` via `langchain-sarvam`).
 - **Vector Database**: Pinecone (`serverless`, cosine distance, 384 dimensions).
 - **Embeddings**: HuggingFace `sentence-transformers/all-MiniLM-L6-v2`.
 - **Sparse Retrieval**: `rank_bm25` (`BM25Retriever`).
-- **Cross-Encoder Reranker**: `FlashRank` (`ms-marco-MiniLM-L-6-v2`).
-- **Evaluation**: RAGAS Framework (`faithfulness`, `answer_relevancy`, `context_precision`, `context_recall`).
+- **Evaluation**: RAGAS Framework (`faithfulness`, `answer_correctness`, `context_precision`, `context_recall`).
 - **Cloud Storage**: AWS S3 (`boto3`).
 
 ---
@@ -113,7 +109,7 @@ graph TD
 ### 1. Prerequisites
 - Python 3.10+
 - Pinecone API Key ([pinecone.io](https://www.pinecone.io/))
-- Groq API Key ([console.groq.com](https://console.groq.com/))
+- Sarvam AI API Key ([sarvam.ai](https://www.sarvam.ai/))
 - AWS S3 Bucket Credentials *(Optional: falls back to local `Data/` folder)*
 
 ### 2. Clone & Install Dependencies
@@ -137,10 +133,10 @@ Create a `.env` file in the root directory:
 ```env
 # Required API Keys
 PINECONE_API_KEY="your-pinecone-api-key"
-GROQ_API_KEY="your-groq-api-key"
+SARVAM_API_KEY="your-sarvam-api-key"
 
 # LLM Model Configuration (Optional)
-GROQ_MODEL_NAME="openai/gpt-oss-120b"
+SARVAM_MODEL_NAME="sarvam-105b"
 
 # AWS S3 Storage Configuration (Optional)
 AWS_ACCESS_KEY_ID="your-aws-access-key-id"
@@ -160,11 +156,10 @@ Download/load the PDF, chunk text, cache chunks locally for BM25, and index vect
 python store_index.py
 ```
 
-### Step 2: Run RAGAS Benchmark Evaluation
-Evaluate RAG generation & cross-encoder retrieval quality:
-```bash
-python evaluate_rag.py
-```
+### Step 2: Run Evaluation
+Run the Sarvam AI RAG benchmark notebook inside the `Evaluation/` folder:
+- Open `Evaluation/rag_evaluation_sarvam.ipynb` in Jupyter Notebook / VS Code.
+- Execute the stages sequentially to evaluate retrieval & generation quality.
 
 ### Step 3: Run the Web Application
 Launch the FastAPI application:
