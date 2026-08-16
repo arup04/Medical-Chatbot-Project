@@ -63,7 +63,7 @@
     "question": "Is acetaminophen available without a prescription?",
     "answer": "Yes, acetaminophen is available without a prescription. It is sold under various brand names including Tylenol, Panadol, Aspirin Free Anacin, and Bayer Select Maximum Strength Headache Pain Relief Formula.",
     "contexts": [
-      "This drug is available without a prescription. Acetaminophen—or APAP—is sold under various brand names, including Tylenol, Panadol, Aspirin Free Anacin, and Bayer Select Maximum Strength Headache Pain Relief Formula."
+      "This drug is available without a prescription. Acetaminophen\u2014or APAP\u2014is sold under various brand names, including Tylenol, Panadol, Aspirin Free Anacin, and Bayer Select Maximum Strength Headache Pain Relief Formula."
     ],
     "ground_truth": "Yes, acetaminophen is an over-the-counter drug available without a prescription.",
     "metadata": {
@@ -135,9 +135,7 @@
   {
     "question": "Is there a known way to prevent achalasia?",
     "answer": "No, there is no known way to prevent achalasia.",
-    "contexts": [
-      "There is no known way to prevent achalasia."
-    ],
+    "contexts": ["There is no known way to prevent achalasia."],
     "ground_truth": "There is no known preventive measure for achalasia.",
     "metadata": {
       "question_type": "prevention",
@@ -194,7 +192,7 @@
   },
   {
     "question": "A patient presents with difficulty swallowing both solids and liquids, chest pain, and heartburn. What condition might this suggest, and what test measures sphincter pressure?",
-    "answer": "These symptoms — dysphagia (difficulty swallowing both liquid and solid foods), chest pain often mistaken for angina, and heartburn — are characteristic of achalasia. The test used to measure esophageal sphincter pressure is esophageal manometry, in which a thin tube is passed into the esophagus.",
+    "answer": "These symptoms \u2014 dysphagia (difficulty swallowing both liquid and solid foods), chest pain often mistaken for angina, and heartburn \u2014 are characteristic of achalasia. The test used to measure esophageal sphincter pressure is esophageal manometry, in which a thin tube is passed into the esophagus.",
     "contexts": [
       "Dysphagia, or difficulty swallowing, is the most common symptom of achalasia. The person with achalasia usually has trouble swallowing both liquid and solid foods. The person has chest pain that is often mistaken for angina pectoris. Heartburn and difficulty belching are common.",
       "Esophageal manometry. In this test, a thin tube is passed into the esophagus to measure the pressure exerted by the esophageal sphincter."
@@ -487,7 +485,7 @@
     "question": "What are the behavioral and psychological effects of sexual abuse on adolescents?",
     "answer": "Adolescents who are sexually abused may display promiscuity, sexual acting out, and in some situations homosexual contact. As adults, they may enter abusive relationships or have problems with intimacy.",
     "contexts": [
-      "Adolescents may display promiscuity, sexual acting out, and—in some situations—homosexual contact.",
+      "Adolescents may display promiscuity, sexual acting out, and\u2014in some situations\u2014homosexual contact.",
       "Children of sexual abuse may as adults enter abusive relationships or have problems with intimacy."
     ],
     "ground_truth": "Sexually abused adolescents may exhibit promiscuity, sexual acting out, and long-term difficulties with intimacy or entering abusive relationships as adults.",
@@ -498,7 +496,7 @@
   },
   {
     "question": "A child shows aggression, depression, low self-esteem, fear, and nightmares. What type of abuse might these symptoms suggest?",
-    "answer": "These symptoms — aggression, anger, hostility, depression, low self-esteem, fear, anxiety, and nightmares — are characteristic of children who have been physically abused. Severe cases may result in suicidal behavior or PTSD.",
+    "answer": "These symptoms \u2014 aggression, anger, hostility, depression, low self-esteem, fear, anxiety, and nightmares \u2014 are characteristic of children who have been physically abused. Severe cases may result in suicidal behavior or PTSD.",
     "contexts": [
       "Children who have been physically abused tend to be more aggressive, angry, hostile, depressed, and have low self-esteem. Additionally, they exhibit fear, anxiety, and nightmares. Severe psychological problems may result in suicidal behavior or posttraumatic stress disorder."
     ],
@@ -616,6 +614,250 @@
     "metadata": {
       "question_type": "mechanism",
       "topic": "Achalasia"
+    }
+  },
+  {
+    "question": "What serious complications can result if an abscess ruptures instead of being properly drained?",
+    "answer": "If an abscess ruptures into neighboring tissue or spills into the bloodstream, the outcome can be serious or fatal. Abscesses near the nasal sinuses, face, ears, or scalp may spread into the brain, and abscesses in an abdominal organ like the liver may rupture into the abdominal cavity. Infection spilling into the bloodstream is called septicemia (blood poisoning), which is also life-threatening.",
+    "contexts": [
+      "If, on the other hand, the abscess ruptures into neighboring areas or permits the infectious agent to spill into the bloodstream, serious or fatal consequences are likely. Abscesses in and around the nasal sinuses, face, ears, and scalp may work their way into the brain. Abscesses within an abdominal organ such as the liver may rupture into the abdominal cavity. In either case, the result is life threatening. Blood poisoning is a term commonly used to describe an infection that has spilled into the blood stream and spread throughout the body from a localized origin. Blood poisoning, known to physicians as septicemia, is also life threatening."
+    ],
+    "ground_truth": "A ruptured abscess can cause septicemia (blood poisoning) or, depending on location, spread into the brain (from sinus/face/ear/scalp abscesses) or the abdominal cavity (from organ abscesses like the liver) \u2014 both life-threatening outcomes.",
+    "metadata": {
+      "question_type": "complication",
+      "topic": "Abscess"
+    }
+  },
+  {
+    "question": "Why should a hand abscess be treated with particular urgency compared to abscesses elsewhere on the body?",
+    "answer": "Abscesses in the hand are more serious than they may appear because of the hand's intricate structure and its critical importance for function. Any hand infection needs to be treated promptly and competently to avoid disproportionate damage.",
+    "contexts": [
+      "Of special note, abscesses in the hand are more serious than they might appear. Due to the intricate structure and the overriding importance of the hand, any hand infection must be treated promptly and competently."
+    ],
+    "ground_truth": "Hand abscesses require urgent, competent treatment because of the hand's intricate anatomy and its functional importance \u2014 delay risks disproportionate harm.",
+    "metadata": {
+      "question_type": "clinical_judgment",
+      "topic": "Abscess"
+    }
+  },
+  {
+    "question": "What is the best way to prevent abscess formation?",
+    "answer": "Abscess formation can often be avoided by treating infections early, using heat for superficial infections or antibiotics as needed. It's even better to prevent the underlying infection altogether by promptly caring for open wounds, especially puncture wounds. Bites are considered the most dangerous type of wound in this regard.",
+    "contexts": [
+      "Infections that are treated early with heat (if superficial) or antibiotics will often resolve without the formation of an abscess. It is even better to avoid infections altogether by taking prompt care of open injuries, particularly puncture wounds. Bites are the most dangerous of all, even more so because they often occur on the hand."
+    ],
+    "ground_truth": "Abscesses can often be prevented by treating infections early (heat for superficial ones, antibiotics as needed) and by promptly caring for open wounds, especially puncture wounds and bites.",
+    "metadata": {
+      "question_type": "prevention",
+      "topic": "Abscess"
+    }
+  },
+  {
+    "question": "Can antibiotics alone typically cure a fully formed abscess without drainage?",
+    "answer": "No. Once an abscess has fully formed, it often does not respond well to antibiotics, since the lining of the abscess cavity limits how much drug can penetrate the infected area, and antibiotics don't function as effectively in that environment. The pus generally needs to be drained.",
+    "contexts": [
+      "Because the lining of the abscess cavity tends to interfere with the amount of the drug that can penetrate the source of infection from the blood, the cavity itself may require draining. Once an abscess has fully formed, it often does not respond to antibiotics. Even if the antibiotic does penetrate into the abscess, it doesn't function as well in that environment."
+    ],
+    "ground_truth": "No \u2014 a fully formed abscess often doesn't respond well to antibiotics alone; the pus typically needs to be drained by a physician.",
+    "metadata": {
+      "question_type": "yes_no",
+      "topic": "Abscess"
+    }
+  },
+  {
+    "question": "Roughly how many children witness domestic violence each year, and what proportion of women's ER visits are related to it?",
+    "answer": "Approximately three million children witness domestic violence every year. Additionally, about one-third of emergency room consultations by women are prompted by domestic violence.",
+    "contexts": [
+      "It is estimated that approximately three million children witness domestic violence every year.",
+      "Approximately one-third of emergency room consultations by women were prompted due to domestic violence."
+    ],
+    "ground_truth": "About three million children witness domestic violence annually, and roughly one-third of women's emergency room visits are prompted by domestic violence.",
+    "metadata": {
+      "question_type": "epidemiology",
+      "topic": "Abuse"
+    }
+  },
+  {
+    "question": "How does emotional abuse typically differ from physical abuse in terms of duration?",
+    "answer": "Emotional abuse generally continues even after physical assaults have stopped. It is usually a personally tailored form of verbal or gesture-based abuse meant to provoke a response from the victim.",
+    "contexts": [
+      "Emotional abuse generally continues even after physical assaults have stopped. In most cases it is a personally tailored form of verbal or gesture abuse expressed to illicit a provoked response."
+    ],
+    "ground_truth": "Emotional abuse often persists even after physical abuse has ended, typically taking the form of personally tailored verbal or gestural abuse intended to provoke a reaction.",
+    "metadata": {
+      "question_type": "clinical_judgment",
+      "topic": "Abuse"
+    }
+  },
+  {
+    "question": "What commonly causes elder abuse, and what forms besides physical harm can it take?",
+    "answer": "Elder abuse is commonly caused by caretaker burnout, resulting from the high level of dependency that frail elderly patients often require. Beyond physical signs, it can involve fear, delayed or unreported need for medical care, financial abuse (money or possessions taken away), and abandonment.",
+    "contexts": [
+      "Abuse in the elderly is common and occurs mostly as a result of caretaker burnout, due to the high level of dependency frail, elderly patients usually require. Abuse can be manifested by physical signs, fear, and delaying or not reporting the need for advanced medical care. Elderly patients may also exhibit financial abuse (money or possessions taken away) and abandonment."
+    ],
+    "ground_truth": "Elder abuse often stems from caretaker burnout due to the high dependency needs of frail patients, and can manifest as physical signs, fear, delayed medical care, financial exploitation, or abandonment.",
+    "metadata": {
+      "question_type": "clinical_impact",
+      "topic": "Abuse"
+    }
+  },
+  {
+    "question": "Is it safe to take acetaminophen for pain relief for longer than 10 days without consulting a doctor?",
+    "answer": "No. Patients should not use acetaminophen for more than 10 days to relieve pain (or 5 days for children) or more than 3 days to reduce fever, unless a physician directs otherwise.",
+    "contexts": [
+      "Patients should not use acetaminophen for more than 10 days to relieve pain (5 days for children) or for more than 3 days to reduce fever, unless directed to do so by a physician. If symptoms do not go away\u2014or if they get worse\u2014contact a physician."
+    ],
+    "ground_truth": "No \u2014 acetaminophen shouldn't be used for more than 10 days for pain (5 days in children) or more than 3 days for fever without a physician's guidance.",
+    "metadata": {
+      "question_type": "yes_no",
+      "topic": "Acetaminophen"
+    }
+  },
+  {
+    "question": "Why might a doctor advise a patient to stop taking acetaminophen a few days before certain medical tests?",
+    "answer": "Acetaminophen can interfere with the results of some medical tests. To ensure accurate results, patients may need to check whether the drug will affect their test and avoid it for a few days beforehand.",
+    "contexts": [
+      "Acetaminophen interferes with the results of some medical tests. Before having medical tests done, check to see whether taking acetaminophen will affect the results. Avoiding the drug for a few days before the tests may be necessary."
+    ],
+    "ground_truth": "Because acetaminophen can interfere with certain medical test results, physicians may advise stopping it for a few days beforehand to ensure accuracy.",
+    "metadata": {
+      "question_type": "clinical_judgment",
+      "topic": "Acetaminophen"
+    }
+  },
+  {
+    "question": "Besides esophageal cancer, what respiratory complications can arise from achalasia?",
+    "answer": "Achalasia can cause a nighttime cough or recurrent pneumonia, resulting from food and liquid passing into the lower airways instead of the stomach.",
+    "contexts": [
+      "Symptoms usually get steadily worse. Other symptoms may include nighttime cough or recurrent pneumonia caused by food passing into the lower airways."
+    ],
+    "ground_truth": "Achalasia can lead to nighttime cough or recurrent pneumonia, caused by food and liquid entering the lower airways (aspiration) instead of the stomach.",
+    "metadata": {
+      "question_type": "complication",
+      "topic": "Achalasia"
+    }
+  },
+  {
+    "question": "Does drug therapy with nifedipine provide a permanent cure for achalasia?",
+    "answer": "No. Nifedipine, a calcium-channel blocker, only provides temporary relief. Taken daily, it helps about two-thirds of patients for as long as two years, but it does not permanently resolve the underlying disorder.",
+    "contexts": [
+      "Drug therapy. Nifedipine, a calcium-channel blocker, reduces muscle contraction. Taken daily, this drug provides relief for about two-thirds of patients for as long as two years."
+    ],
+    "ground_truth": "No \u2014 nifedipine only offers temporary relief, helping about two-thirds of patients for up to two years, rather than curing achalasia permanently.",
+    "metadata": {
+      "question_type": "yes_no",
+      "topic": "Achalasia"
+    }
+  },
+  {
+    "question": "If a parent has achondroplasia, what is the chance their child will inherit it, and is inheritance the most common way the condition arises?",
+    "answer": "A parent with achondroplasia has a 50% chance of passing the condition to their child. However, although achondroplasia can be inherited, most cases actually occur due to a new spontaneous mutation in a gene rather than being passed down from a parent.",
+    "contexts": [
+      "Achondroplasia is caused by a genetic defect. It is a dominant trait, meaning that anybody with the genetic defect will display all the symptoms of the disorder. A parent with the disorder has a 50% chance of passing it on to the offspring. Although achondroplasia can be passed on to subsequent offspring, the majority of cases occur due to a new mutation (change) in a gene."
+    ],
+    "ground_truth": "A parent with achondroplasia has a 50% chance of passing it to a child, but most cases actually arise from a new spontaneous gene mutation rather than being inherited.",
+    "metadata": {
+      "question_type": "clinical_judgment",
+      "topic": "Achondroplasia"
+    }
+  },
+  {
+    "question": "What serious neurological complication can result from the narrowed foramen magnum in achondroplasia?",
+    "answer": "The narrowed foramen magnum in achondroplasia can disrupt the normal flow of fluid between the brain and spinal cord, leading to an abnormal accumulation of fluid in the brain, known as hydrocephalus.",
+    "contexts": [
+      "The narrowed foramen magnum may disrupt the normal flow of fluid between the brain and the spinal cord, resulting in the accumulation of too much fluid in the brain (hydrocephalus)."
+    ],
+    "ground_truth": "The narrowed foramen magnum in achondroplasia can disrupt cerebrospinal fluid flow, causing hydrocephalus (excess fluid accumulation in the brain).",
+    "metadata": {
+      "question_type": "complication",
+      "topic": "Achondroplasia"
+    }
+  },
+  {
+    "question": "Does achondroplasia affect intelligence or the ability to have children?",
+    "answer": "No. Achondroplasia affects bone and cartilage development, but the disease does not affect mental capacity or reproductive ability.",
+    "contexts": [
+      "The disease does not affect either mental capacity, or reproductive ability."
+    ],
+    "ground_truth": "No \u2014 achondroplasia does not affect mental capacity or reproductive ability.",
+    "metadata": {
+      "question_type": "yes_no",
+      "topic": "Achondroplasia"
+    }
+  },
+  {
+    "question": "What is malignant hyperthermia, and why is family history important to disclose before general anesthesia?",
+    "answer": "Malignant hyperthermia is a likely genetically-linked reaction that can occur during general anesthesia, causing rapid irregular heartbeat, breathing problems, very high fever, and muscle tightness or spasms. Because it can run in families, patients should tell their doctor if they or a family member has had this reaction to anesthesia in the past.",
+    "contexts": [
+      "In particular, people who have had malignant hyperthermia or whose family members have had malignant hyperthermia during or after being given an anesthetic should inform the physician. Signs of malignant hyperthermia include rapid, irregular heartbeat, breathing problems, very high fever, and muscle tightness or spasms.",
+      "Malignant hyperthermia\u2014A type of reaction (probably with a genetic origin) that can occur during general anesthesia and in which the patient experiences a high fever, muscle rigidity, and irregular heart rate and blood pressure."
+    ],
+    "ground_truth": "Malignant hyperthermia is a probably-genetic reaction to anesthesia involving rapid irregular heartbeat, breathing problems, very high fever, and muscle rigidity; a family history should be disclosed since it can run in families.",
+    "metadata": {
+      "question_type": "complication",
+      "topic": "General Anesthesia"
+    }
+  },
+  {
+    "question": "Why must patients disclose street drug use to their doctor before receiving general anesthesia?",
+    "answer": "Serious and possibly life-threatening reactions can occur when general anesthetics are given to people who use street drugs such as cocaine, marijuana, PCP, amphetamines, barbiturates, heroin, or other narcotics. Disclosing this use helps the doctor avoid dangerous drug interactions.",
+    "contexts": [
+      "Serious and possibly life-threatening reactions may occur when general anesthetics are given to people who use street drugs, such as cocaine, marijuana, phencyclidine (PCP or angel dust), amphetamines (uppers), barbiturates (downers), heroin, or other narcotics. Anyone who uses these drugs should make sure their doctor or dentist knows what they have taken."
+    ],
+    "ground_truth": "Disclosure is important because combining general anesthetics with street drugs like cocaine, PCP, amphetamines, or heroin can cause serious, potentially life-threatening reactions.",
+    "metadata": {
+      "question_type": "clinical_judgment",
+      "topic": "General Anesthesia"
+    }
+  },
+  {
+    "question": "What activities should patients avoid for at least 24 hours after receiving general anesthesia, and why?",
+    "answer": "For at least 24 hours after general anesthesia, patients should avoid driving, operating machinery, or other activities that could endanger themselves or others, since anesthetics affect the central nervous system and can leave patients drowsy, weak, or with impaired coordination. They should also avoid alcohol and CNS-depressant medications during this period.",
+    "contexts": [
+      "For these reasons, anyone who has had general anesthesia should not drive, operate machinery, or perform other activities that could endanger themselves or others for at least 24 hours, or longer if necessary.",
+      "Patients who have had general anesthesia should not drink alcoholic beverages or take medication that slow down the central nervous system (such as antihistamines, sedatives, tranquilizers, sleep aids, certain pain relievers, muscle relaxants, and anti-seizure medication) for at least 24 hours, except under a doctor's care."
+    ],
+    "ground_truth": "For at least 24 hours after general anesthesia, patients should avoid driving, operating machinery, drinking alcohol, and taking CNS-depressant medications, since lingering drowsiness and impaired coordination make these unsafe.",
+    "metadata": {
+      "question_type": "clinical_impact",
+      "topic": "General Anesthesia"
+    }
+  },
+  {
+    "question": "What is the leading cause of death in aplastic anemia patients treated with blood transfusions alone?",
+    "answer": "Patients with the worst-prognosis type of aplastic anemia \u2014 associated with very low levels of a particular white blood cell type \u2014 have a high chance of dying from overwhelming bacterial infections. In fact, 80% of patients treated with blood transfusions alone die within 18 months to two years.",
+    "contexts": [
+      "The worst-prognosis type of aplastic anemia is one associated with very low numbers of a particular type of white blood cell. These patients have a high chance of dying from overwhelming bacterial infections. In fact, 80% of all patients treated with blood transfusions alone die within 18 months to two years."
+    ],
+    "ground_truth": "Overwhelming bacterial infection is the leading cause of death; 80% of aplastic anemia patients treated with transfusions alone die within 18 months to two years.",
+    "metadata": {
+      "question_type": "complication",
+      "topic": "Aplastic Anemia"
+    }
+  },
+  {
+    "question": "Are hereditary forms of aplastic anemia common?",
+    "answer": "No. Hereditary aplastic anemia is relatively rare, occurring in conditions such as Fanconi's anemia, Shwachman-Diamond syndrome, and dyskeratosis congenita.",
+    "contexts": [
+      "Hereditary aplastic anemia is relatively rare, but does occur in Fanconi's anemia, Shwachman-Diamond syndrome, and dyskeratosis congenita."
+    ],
+    "ground_truth": "No \u2014 hereditary aplastic anemia is relatively rare, occurring in conditions like Fanconi's anemia, Shwachman-Diamond syndrome, and dyskeratosis congenita.",
+    "metadata": {
+      "question_type": "yes_no",
+      "topic": "Aplastic Anemia"
+    }
+  },
+  {
+    "question": "How does Broca's aphasia differ from Wernicke's aphasia in terms of speech fluency and comprehension?",
+    "answer": "Broca's aphasia involves effortful, halting speech \u2014 sometimes complete mutism, sometimes single words or sentences produced with great effort \u2014 while hearing comprehension usually remains intact. Wernicke's aphasia, by contrast, involves fluent, uninterrupted speech that is often unnecessary or made-up (unintelligible), along with significant difficulty understanding other people's speech.",
+    "contexts": [
+      "Individuals with Broca's aphasia may be completely unable to use speech (mutism) or may be able to use single-word statements or even full sentences, though these sentences may require a great deal of effort to construct... Hearing comprehension is usually not affected, so they are able to understand other people's speech and conversation and can follow commands.",
+      "Individuals with Wernicke's aphasia speak in long, uninterrupted sentences; however, the words used are frequently unnecessary or even made-up. They have a great deal of difficulty understanding other people's speech, sometimes to the point of being unable to understand spoken language at all."
+    ],
+    "ground_truth": "Broca's aphasia causes effortful, halting speech (sometimes mutism) with preserved comprehension, while Wernicke's aphasia causes fluent but nonsensical speech with significantly impaired comprehension.",
+    "metadata": {
+      "question_type": "comparison",
+      "topic": "Aphasia"
     }
   }
 ]
