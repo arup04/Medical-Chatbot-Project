@@ -11,6 +11,7 @@ import asyncio
 from src.vector_store import download_hugging_face_embeddings, get_vector_store
 from src.rag_pipeline import create_rag_chain
 from Guardrails.input import run_input_guardrails
+from Guardrails.output import should_append_disclaimer, MANDATORY_DISCLAIMER, check_output_safety
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -86,6 +87,9 @@ async def stream_response(msg: str):
         clean_input = guardrail_result.sanitized_input or msg
 
         # Step 2: RAG Pipeline - Use LangChain astream to generate response chunks asynchronously
+        full_answer = ""
+        retrieved_docs = []
+
         async for chunk in rag_chain.astream({"input": clean_input}):
             if "context" in chunk:
                 # Extract documents and metadata
@@ -101,9 +105,21 @@ async def stream_response(msg: str):
                         "page_content": doc.page_content,
                         "metadata": clean_metadata
                     })
+                retrieved_docs = docs
                 yield f"[CONTEXT] {json.dumps(docs)}\n"
             if "answer" in chunk:
+                full_answer += chunk["answer"]
                 yield f"[ANSWER] {chunk['answer']}\n"
+
+        # Step 3: Output Guardrails Layer (Post-Generation Verification & Disclaimer)
+        safety_check = check_output_safety(full_answer)
+        if not safety_check.passed:
+            blocked_warning = safety_check.output_text.replace("\n", "<br>")
+            yield f"[ANSWER] <br><br>{blocked_warning}\n"
+        elif should_append_disclaimer(full_answer):
+            formatted_disclaimer = MANDATORY_DISCLAIMER.replace("\n", "<br>")
+            yield f"[ANSWER] {formatted_disclaimer}\n"
+
         yield "[DONE]\n"
     except Exception as e:
         yield f"[ERROR] {str(e)}\n"
