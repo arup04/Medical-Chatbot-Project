@@ -10,6 +10,7 @@ import asyncio
 # Modular pipeline imports
 from src.vector_store import download_hugging_face_embeddings, get_vector_store
 from src.rag_pipeline import create_rag_chain
+from Guardrails.input import run_input_guardrails
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -72,8 +73,20 @@ rag_chain = create_rag_chain(retriever=retriever)
 
 async def stream_response(msg: str):
     try:
-        # Use LangChain astream to generate response chunks asynchronously
-        async for chunk in rag_chain.astream({"input": msg}):
+        # Step 1: Input Guardrails Layer (Emergency, Dosage, Injection, PII)
+        guardrail_result = run_input_guardrails(msg)
+        if guardrail_result.action == "block":
+            yield "[CONTEXT] []\n"
+            formatted_msg = (guardrail_result.message or "Request blocked by safety policy.").replace("\n", "<br>")
+            yield f"[ANSWER] {formatted_msg}\n"
+            yield "[DONE]\n"
+            return
+
+        # Use sanitized query if PII was redacted, otherwise original input
+        clean_input = guardrail_result.sanitized_input or msg
+
+        # Step 2: RAG Pipeline - Use LangChain astream to generate response chunks asynchronously
+        async for chunk in rag_chain.astream({"input": clean_input}):
             if "context" in chunk:
                 # Extract documents and metadata
                 docs = []

@@ -323,6 +323,7 @@ function renderMessage(text, sender, isSkeleton = false) {
 function formatMessageText(text) {
     return text
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>');
 }
 
