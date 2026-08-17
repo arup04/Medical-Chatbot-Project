@@ -322,6 +322,7 @@ function renderMessage(text, sender, isSkeleton = false) {
 
 function formatMessageText(text) {
     return text
+        .replace(/---/g, '<hr style="border: none; border-top: 1px solid var(--border-color, rgba(255,255,255,0.12)); margin: 12px 0 8px 0;">')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>');
@@ -459,6 +460,7 @@ async function handleFormSubmit() {
     
     const formData = new FormData();
     formData.append("msg", text);
+    formData.append("session_id", activeSessionId || "default_session");
     
     try {
         const response = await fetch("/get", {
