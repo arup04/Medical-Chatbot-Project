@@ -26,6 +26,7 @@ An end-to-end **Clinical Decision Support & Patient Education AI Assistant** bui
 - [Environment Variables](#-environment-variables)
 - [Installation & Setup](#-installation--setup)
 - [Running the Application](#-running-the-application)
+- [Running with Docker](#-running-with-docker)
 - [API Endpoints Reference](#-api-endpoints-reference)
 - [RAGAS Evaluation Benchmarks](#-ragas-evaluation-benchmarks)
 - [License & Author](#-license--author)
@@ -150,9 +151,11 @@ Medical-Chatbot-Project/
 │   └── style.css                     # Responsive clinical SaaS styling (Dark/Light themes)
 ├── templates/                        # Frontend HTML templates
 │   └── chat.html                     # Clinical chatbot interface
+├── .dockerignore                     # Docker build exclusion rules
 ├── .env                              # Environment variables (API Keys, Configs)
 ├── .gitignore                        # Git ignore patterns (*.db, *.sqlite, checkpoints)
 ├── app.py                            # FastAPI application server & streaming endpoints
+├── Dockerfile                        # Containerized build & deployment specification
 ├── requirements.txt                  # Python dependencies declaration
 ├── setup.py                          # Package installation configuration
 ├── store_index.py                    # Ingestion & vector indexing CLI script
@@ -298,6 +301,26 @@ uvicorn app:app --host 0.0.0.0 --port 8080 --reload
 Navigate to **`http://localhost:8080`** to interact with MediAid AI.
 
 ---
+
+## 🐳 Running with Docker
+
+You can containerize and run the complete application using Docker:
+
+### 1. Build the Docker Image
+```bash
+docker build -t mediaid-ai:latest .
+```
+
+### 2. Run the Container
+```bash
+docker run -d \
+  --name mediaid-app \
+  -p 8080:8080 \
+  --env-file .env \
+  mediaid-ai:latest
+```
+
+The container includes built-in healthchecks to verify server availability. Access the UI at **`http://localhost:8080`**.
 
 ## 🌐 API Endpoints Reference
 

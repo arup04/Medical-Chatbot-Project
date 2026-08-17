@@ -1,0 +1,81 @@
+# Git and Version Control
+.git/
+.gitignore
+.gitattributes
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+medibot/
+
+# Environment Variables & Secrets (CRITICAL: Never bake credentials into Docker images)
+.env
+.env.*
+!.env.example
+
+# Database Files & History
+*.db
+*.sqlite
+*.sqlite3
+db.sqlite3
+db.sqlite3-journal
+Data/*.db
+
+# Evaluation Checkpoints & Logs
+checkpoints_sarvam/
+evaluation/checkpoints/
+logs/
+*.log
+
+# Jupyter Notebook Checkpoints & Exploratory Research
+.ipynb_checkpoints/
+research/
+
+# Screenshots, Demos, and Media
+*.png
+*.jpg
+*.jpeg
+demo_results/
+demo_images/
+image.png
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
