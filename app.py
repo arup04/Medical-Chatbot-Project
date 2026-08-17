@@ -10,6 +10,9 @@ import asyncio
 # Modular pipeline imports
 from src.vector_store import download_hugging_face_embeddings, get_vector_store
 from src.rag_pipeline import create_rag_chain
+from src.chat_history import add_message, get_chat_history, clear_session_history
+from Guardrails.input import run_input_guardrails
+from Guardrails.output import should_append_disclaimer, MANDATORY_DISCLAIMER, check_output_safety
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -64,16 +67,37 @@ if cached_docs:
 else:
     base_retriever = pinecone_retriever
 
-from src.reranker import get_reranked_retriever
-retriever = get_reranked_retriever(base_retriever, top_n=3)
+# 2. Assign winning Stage 3 Hybrid Retriever
+retriever = base_retriever
 
 # 3. Create the RAG chain
 rag_chain = create_rag_chain(retriever=retriever)
 
-async def stream_response(msg: str):
+async def stream_response(msg: str, session_id: str = "default_session"):
     try:
-        # Use LangChain astream to generate response chunks asynchronously
-        async for chunk in rag_chain.astream({"input": msg}):
+        # Step 1: Input Guardrails Layer (Emergency, Dosage, Injection, PII)
+        guardrail_result = run_input_guardrails(msg)
+        if guardrail_result.action == "block":
+            yield "[CONTEXT] []\n"
+            formatted_msg = (guardrail_result.message or "Request blocked by safety policy.").replace("\n", "<br>")
+            yield f"[ANSWER] {formatted_msg}\n"
+            yield "[DONE]\n"
+            # Record blocked exchange in SQLite
+            add_message(session_id, "human", msg)
+            add_message(session_id, "ai", guardrail_result.message or "Request blocked.")
+            return
+
+        # Use sanitized query if PII was redacted, otherwise original input
+        clean_input = guardrail_result.sanitized_input or msg
+
+        # Step 2: Fetch Recent Multi-Turn Chat History from SQLite DB
+        chat_history = get_chat_history(session_id=session_id, limit=6)
+
+        # Step 3: RAG Pipeline - History-Aware Retriever + Sarvam AI Generator
+        full_answer = ""
+        retrieved_docs = []
+
+        async for chunk in rag_chain.astream({"input": clean_input, "chat_history": chat_history}):
             if "context" in chunk:
                 # Extract documents and metadata
                 docs = []
@@ -88,10 +112,31 @@ async def stream_response(msg: str):
                         "page_content": doc.page_content,
                         "metadata": clean_metadata
                     })
+                retrieved_docs = docs
                 yield f"[CONTEXT] {json.dumps(docs)}\n"
             if "answer" in chunk:
+                full_answer += chunk["answer"]
                 yield f"[ANSWER] {chunk['answer']}\n"
+
+        # Step 4: Output Guardrails Layer (Post-Generation Verification & Disclaimer)
+        safety_check = check_output_safety(full_answer)
+        final_saved_answer = full_answer
+
+        if not safety_check.passed:
+            blocked_warning = safety_check.output_text.replace("\n", "<br>")
+            yield f"[ANSWER] <br><br>{blocked_warning}\n"
+            final_saved_answer = safety_check.output_text
+        elif should_append_disclaimer(full_answer):
+            formatted_disclaimer = MANDATORY_DISCLAIMER.replace("\n", "<br>")
+            yield f"[ANSWER] {formatted_disclaimer}\n"
+            final_saved_answer = full_answer + MANDATORY_DISCLAIMER
+
         yield "[DONE]\n"
+
+        # Step 5: Save Multi-Turn Exchange to SQLite DB
+        add_message(session_id, "human", msg)
+        add_message(session_id, "ai", final_saved_answer)
+
     except Exception as e:
         yield f"[ERROR] {str(e)}\n"
 
@@ -101,9 +146,14 @@ async def get_index(request: Request):
     return templates.TemplateResponse("chat.html", {"request": request})
 
 @app.post("/get")
-async def chat(msg: str = Form(...)):
-    # Stream the tokens and contexts back using a StreamingResponse
-    return StreamingResponse(stream_response(msg), media_type="text/plain")
+async def chat(msg: str = Form(...), session_id: str = Form(default="default_session")):
+    # Stream the tokens and contexts back using a StreamingResponse with session memory
+    return StreamingResponse(stream_response(msg, session_id), media_type="text/plain")
+
+@app.post("/clear_history")
+async def clear_history(session_id: str = Form(...)):
+    success = clear_session_history(session_id)
+    return {"status": "success" if success else "failed", "session_id": session_id}
 
 if __name__ == "__main__":
     import uvicorn

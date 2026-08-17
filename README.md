@@ -1,54 +1,102 @@
-# 🩺 Medical Chatbot — Hybrid RAG Pipeline with FlashRank Reranking & Interactive UI
+# 🩺 MediAid AI — Clinical Hybrid RAG Assistant
 
-An end-to-end, production-ready **Medical AI Assistant** built with a multi-stage Retrieval-Augmented Generation (RAG) architecture. The system processes and indexes medical domain knowledge (e.g., the *Gale Encyclopedia of Medicine*), leveraging **Pinecone dense vector search**, **local BM25 sparse retrieval**, **FlashRank cross-encoder reranking**, **Groq LLM inference**, **FastAPI real-time streaming**, and continuous quality evaluation via the **RAGAS framework**.
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![LangChain](https://img.shields.io/badge/LangChain-v0.3+-green.svg)](https://python.langchain.com/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688.svg)](https://fastapi.tiangolo.com/)
+[![Pinecone](https://img.shields.io/badge/Pinecone-Serverless-blueviolet.svg)](https://www.pinecone.io/)
+[![Sarvam AI](https://img.shields.io/badge/Sarvam_AI-sarvam--105b-orange.svg)](https://www.sarvam.ai/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Branch Note**: You are currently on the `reranking_improvements` branch, which introduces **FlashRank Cross-Encoder Contextual Compression & Reranking** on top of **Hybrid Search (Dense + Sparse)** and the **FastAPI Streaming Web UI**.
+An end-to-end **Clinical Decision Support & Patient Education AI Assistant** built on a multi-stage Retrieval-Augmented Generation (RAG) architecture. Grounded strictly in authoritative medical literature (*The Gale Encyclopedia of Medicine*), MediAid AI integrates **Pinecone dense vector search**, **local BM25 sparse keyword retrieval**, **Sarvam AI (`sarvam-105b`)**, **multi-layered clinical guardrails**, **thread-safe persistent SQLite multi-turn conversational memory**, and continuous quality evaluation via the **RAGAS framework**.
+
+---
+
+## 📑 Table of Contents
+
+- [Key Features](#-key-features)
+- [System Architecture](#-system-architecture)
+- [Project Directory Structure](#-project-directory-structure)
+- [Deep-Dive: Core Subsystems](#-deep-dive-core-subsystems)
+  - [1. Data Ingestion & Hybrid Retrieval](#1-data-ingestion--hybrid-retrieval)
+  - [2. Multi-Turn Conversational Memory](#2-multi-turn-conversational-memory)
+  - [3. Clinical Guardrails Suite](#3-clinical-guardrails-suite)
+  - [4. Real-Time Token & Context Streaming](#4-real-time-token--context-streaming)
+  - [5. Clinical Web UI & Citations Explorer](#5-clinical-web-ui--citations-explorer)
+- [Tech Stack](#-tech-stack)
+- [Environment Variables](#-environment-variables)
+- [Installation & Setup](#-installation--setup)
+- [Running the Application](#-running-the-application)
+- [Running with Docker](#-running-with-docker)
+- [API Endpoints Reference](#-api-endpoints-reference)
+- [RAGAS Evaluation Benchmarks](#-ragas-evaluation-benchmarks)
+- [License & Author](#-license--author)
 
 ---
 
 ## 🌟 Key Features
 
-- **⚡ FlashRank Cross-Encoder Reranking**: Integrates `FlashrankRerank` (`ms-marco-MiniLM-L-6-v2`) wrapped inside LangChain's `ContextualCompressionRetriever` (`src/reranker.py`) to re-score and select the top 3 most relevant context chunks from hybrid search candidate results (`k=6`), significantly boosting Context Precision.
-- **🔀 Hybrid Search (Dense + Sparse)**: Combines dense semantic embeddings (`sentence-transformers/all-MiniLM-L6-v2`) with sparse keyword matching (`BM25Retriever`) via an `EnsembleRetriever` with balanced 50/50 weighting.
-- **🎯 Dynamic Out-of-Domain Filtering**: Employs a custom `HybridThresholdRetriever` enforcing a dense Pinecone similarity threshold (`0.78`) to reject out-of-domain medical queries safely.
-- **📡 Real-Time Token & Context Streaming**: FastAPI backend using `StreamingResponse` to broadcast live token streams (`[ANSWER]`) and retrieved source context metadata (`[CONTEXT]`).
-- **🖥️ Interactive Web UI**: Custom dark-themed web frontend (`templates/chat.html`, `static/style.css`, `static/script.js`) featuring real-time message streaming, source citations, and context drawer.
-- **☁️ Cloud Ingestion Pipeline**: Automated AWS S3 PDF downloading via `boto3` with local storage fallback (`Data/Medical_book.pdf`).
-- **📊 RAGAS Quality Evaluation**: Production evaluation suite measuring **Faithfulness**, **Answer Relevancy**, **Context Precision**, and **Context Recall** with built-in `InMemoryRateLimiter`.
+- **🔀 Hybrid Search (Dense + Sparse)**: Combines dense semantic embeddings (`sentence-transformers/all-MiniLM-L6-v2`) with sparse keyword matching (`BM25Retriever`) via an `EnsembleRetriever` with 50/50 reciprocal rank weighting.
+- **🇮🇳 Sarvam AI Generation**: Powered by Sarvam AI (`sarvam-105b` via `langchain-sarvam`) for factual, low-latency, and hallucination-resistant clinical generation.
+- **🧠 Multi-Turn Conversational Memory**:
+  - Persistent **SQLite database storage** (`src/chat_history.py`) for thread isolation and multi-turn state preservation across server restarts.
+  - **History-Aware Retriever** (`create_history_aware_retriever`) that automatically reformulates follow-up queries using prior chat context (e.g. *"What are its symptoms?"* -> *"What are the symptoms of Type 2 Diabetes?"*).
+- **🛡️ Multi-Tiered Clinical Guardrails**:
+  - **Input Guardrails** (`Guardrails/input/`): Real-time triage for emergency red-flag symptoms, exact drug dosage query rejection, prompt injection defense, and automated PII de-identification.
+  - **Output Guardrails** (`Guardrails/output/`): Automated prescription detection, lethal remedy safety checks, and dynamic mandatory medical disclaimers.
+- **🎯 Dynamic Out-of-Domain Filtering**: Custom `HybridThresholdRetriever` enforcing a Pinecone similarity score threshold (`0.78`) to reject non-medical and out-of-domain queries.
+- **📡 Real-Time Token & Context Streaming**: FastAPI backend using asynchronous `StreamingResponse` to broadcast live token streams (`[ANSWER]`) alongside structured retrieval metadata (`[CONTEXT]`).
+- **🖥️ Clinical Web UI & Citations Drawer**:
+  - 3-column responsive layout with dark and light theme switching.
+  - Clean consolidated inline citation badges (e.g. `📖 The Gale Encyclopedia of Medicine · 7 Verified Passages`).
+  - Interactive **Retrieved Context** panel displaying passage excerpts, similarity match percentages, and click-to-focus inspection.
+  - Voice input (Speech-to-Text via Web Speech API) and audio read-aloud playback (Text-to-Speech via SpeechSynthesis).
+  - Multi-session consultation switcher and text log export.
 
 ---
 
 ## 🛠️ System Architecture
 
 ```mermaid
-graph TD
-    subgraph Data Ingestion & Indexing
-        A[AWS S3 Bucket / Local Data] -->|boto3 / Loader| B[src/ingestion.py]
-        B --> C[src/preprocessing.py]
-        C -->|RecursiveTextSplitter| D[Text Chunks 500 chars]
-        D -->|Save Cache| E[(preprocessed_chunks.json)]
-        D -->|Embeddings| F[src/vector_store.py]
-        F -->|all-MiniLM-L6-v2| G[(Pinecone Vector DB)]
+flowchart TD
+    subgraph 1. Ingestion & Indexing Pipeline
+        S3[AWS S3 Bucket / Local PDF] -->|boto3 / PyPDF| ING[src/ingestion.py]
+        ING --> PREP[src/preprocessing.py]
+        PREP -->|RecursiveCharacterTextSplitter| CHUNKS[Text Chunks 500 chars]
+        CHUNKS -->|Local Cache| BM25_CACHE[(Evaluation/preprocessed_chunks.json)]
+        CHUNKS -->|MiniLM-L6-v2 Embeddings| VEC[src/vector_store.py]
+        VEC --> PINECONE[(Pinecone Serverless DB)]
     end
 
-    subgraph Hybrid Retrieval & FlashRank Reranking Pipeline
-        H[User Query] --> I[src/hybrid_retriever.py]
-        E -->|BM25 Sparse| I
-        G -->|Dense Similarity Threshold 0.78| I
-        I -->|Top 6 Candidates| J[src/reranker.py]
-        J -->|FlashRank Cross-Encoder| K[Top-3 Re-ranked Chunks]
+    subgraph 2. Request & Input Guardrails
+        USER([User Query]) --> IG[Guardrails/input/pipeline.py]
+        IG -->|1. Emergency Triage| EMG{Life Threatening?}
+        EMG -->|Yes| BLK1[Return 911/112 Triage Block]
+        EMG -->|No| DOS{Exact Dosage Query?}
+        DOS -->|Yes| BLK2[Return Dosage Advisory Block]
+        DOS -->|No| INJ{Prompt Injection?}
+        INJ -->|Yes| BLK3[Return Security Policy Block]
+        INJ -->|No| PII[Sanitize PII / Redact]
     end
 
-    subgraph LLM Generation & Web Layer
-        K --> L[src/rag_pipeline.py]
-        M[Groq LLM] <--> L
-        L <--> N[app.py / FastAPI Server]
-        N <-->|StreamingResponse| O[Interactive UI / Web Browser]
+    subgraph 3. Conversational Hybrid RAG Engine
+        PII --> DB_HIST[(src/chat_history.py - SQLite DB)]
+        DB_HIST -->|Fetch Last 6 Turns| RAG[src/rag_pipeline.py]
+        RAG -->|1. History Contextualization| SARVAM_C[Sarvam AI Chat Model]
+        SARVAM_C -->|Standalone Query| HYBRID[src/hybrid_retriever.py]
+        BM25_CACHE -->|BM25 Sparse Retrieval| HYBRID
+        PINECONE -->|Cosine Similarity Threshold 0.78| HYBRID
+        HYBRID -->|Top 6 Context Documents| COMBINE[Stuff Documents Chain]
+        COMBINE -->|2. Generate Grounded Answer| SARVAM_G[Sarvam AI Generator]
     end
 
-    subgraph Evaluation Suite
-        K -.-> P[evaluate_rag.py / src/evaluation.py]
-        P -.->|RAGAS Metrics| Q[ragas_evaluation_results.csv]
+    subgraph 4. Output Guardrails & Delivery
+        SARVAM_G --> OG[Guardrails/output/pipeline.py]
+        OG -->|Prescription / Harm Check| SAFE{Output Safe?}
+        SAFE -->|Breached| OVERRIDE[Override with Safe Medical Notice]
+        SAFE -->|Passed| DISC[Append Mandatory Disclaimer]
+        DISC --> SAVE_DB[(Save Exchange to SQLite)]
+        DISC --> API[app.py - FastAPI StreamingResponse]
+        API <-->|SSE Stream: [CONTEXT], [ANSWER]| UI[Clinical Web Interface]
     end
 ```
 
@@ -57,92 +105,139 @@ graph TD
 ## 📂 Project Directory Structure
 
 ```text
-.
-├── Data/                             # Local raw PDF storage directory
-│   └── Medical_book.pdf              # Source medical textbook
-├── evaluation/                       # RAGAS evaluation suite & benchmarks
-│   ├── RAGAS_DATASET_README.md       # Dataset metadata & specifications
+Medical-Chatbot-Project/
+├── Data/                             # Local medical textbook storage
+│   └── Medical_book.pdf              # The Gale Encyclopedia of Medicine (Source Reference)
+├── Evaluation/                       # RAGAS evaluation suite & performance benchmarks
+│   ├── final_rag_application_audit_sarvam.csv
 │   ├── preprocessed_chunks.json      # Cached chunks for local BM25 index
-│   ├── ragas_evaluation_results.csv  # Output metrics CSV report
+│   ├── rag_evaluation_sarvam.ipynb   # Resumable Sarvam AI benchmark notebook
+│   ├── rag_stage_comparison_sarvam.csv
 │   ├── ragas_medical_evaluation_dataset.csv
 │   └── ragas_medical_evaluation_dataset.json
-├── research/                         # Jupyter notebook experiments & trials
+├── Guardrails/                       # Multi-tier clinical safety suite
+│   ├── input/                        # Input guardrail filters
+│   │   ├── __init__.py
+│   │   ├── dosage.py                 # Exact dosage query rejection
+│   │   ├── emergency.py              # Emergency symptom triage detection
+│   │   ├── injection.py              # Prompt injection & jailbreak defense
+│   │   ├── models.py                 # Pydantic models for input validation
+│   │   ├── pii.py                    # Automated PII detection & redaction
+│   │   └── pipeline.py               # Composite input guardrails runner
+│   ├── output/                       # Output safety verification
+│   │   ├── __init__.py
+│   │   ├── disclaimer.py             # Mandatory dynamic disclaimer injection
+│   │   ├── faithfulness.py           # Context-grounded consistency check
+│   │   ├── models.py                 # Pydantic models for output safety
+│   │   ├── pipeline.py               # Composite output guardrails runner
+│   │   └── safety.py                 # Unverified prescription & harm auditor
+│   └── README.md                     # Guardrails architecture & documentation
+├── research/                         # Prototyping & exploratory analysis
 │   └── trials.ipynb
-├── src/                              # Core modular Python packages
+├── src/                              # Core Python packages & modular pipeline
 │   ├── __init__.py
-│   ├── evaluation.py                 # RAGAS metric executor with rate limiting & LLM binding
-│   ├── exception.py                  # Custom exception handling with line tracing
-│   ├── hybrid_retriever.py           # HybridThresholdRetriever (Dense threshold + BM25 Ensemble)
+│   ├── chat_history.py               # SQLite persistent multi-turn conversation memory
+│   ├── exception.py                  # Custom exception handling with stack-trace logging
+│   ├── hybrid_retriever.py           # HybridThresholdRetriever (BM25 + Dense threshold)
 │   ├── ingestion.py                  # AWS S3 downloader & PDF DirectoryLoader
-│   ├── logger.py                     # Centralized logging setup
-│   ├── preprocessing.py              # Minimal metadata filtering & character chunking
-│   ├── prompt.py                     # System prompt templates
-│   ├── rag_pipeline.py               # RAG chain construction (ChatGroq + ChatPromptTemplate)
-│   ├── reranker.py                   # FlashRank cross-encoder contextual compression retriever
-│   └── vector_store.py               # Pinecone index management & HuggingFace embeddings
-├── static/                           # UI assets
-│   ├── app.png                       # Application screenshot
-│   ├── script.js                     # Async JS frontend logic (streaming, markdown, context drawer)
-│   └── style.css                     # Modern dark theme styles
+│   ├── logger.py                     # Centralized logging configuration
+│   ├── preprocessing.py              # Metadata extraction & text chunking
+│   ├── prompt.py                     # Contextualization & grounded QA prompt templates
+│   ├── rag_pipeline.py               # History-aware retrieval chain with Sarvam AI
+│   └── vector_store.py               # Pinecone index management & Hugging Face embeddings
+├── static/                           # Frontend assets
+│   ├── app.png                       # Chatbot avatar asset
+│   ├── script.js                     # Async streaming, voice I/O, citations logic
+│   └── style.css                     # Responsive clinical SaaS styling (Dark/Light themes)
 ├── templates/                        # Frontend HTML templates
-│   └── chat.html                     # Main interactive chatbot web interface
+│   └── chat.html                     # Clinical chatbot interface
+├── .dockerignore                     # Docker build exclusion rules
+├── .env                              # Environment variables (API Keys, Configs)
+├── .gitignore                        # Git ignore patterns (*.db, *.sqlite, checkpoints)
 ├── app.py                            # FastAPI application server & streaming endpoints
-├── evaluate_rag.py                   # Orchestration script to run RAGAS benchmark evaluation
+├── Dockerfile                        # Containerized build & deployment specification
 ├── requirements.txt                  # Python dependencies declaration
 ├── setup.py                          # Package installation configuration
-└── store_index.py                    # Data ingestion & indexing entry point script
+├── store_index.py                    # Ingestion & vector indexing CLI script
+└── README.md                         # Project documentation
 ```
+
+---
+
+## 🔬 Deep-Dive: Core Subsystems
+
+### 1. Data Ingestion & Hybrid Retrieval
+- **PDF Extraction**: Ingests textbook PDFs dynamically from AWS S3 storage buckets (via `boto3`) with automatic fallback to local `Data/Medical_book.pdf`.
+- **Text Chunking**: Uses `RecursiveCharacterTextSplitter` with `chunk_size=500` and `chunk_overlap=20`. Preprocessed chunks are cached in `Evaluation/preprocessed_chunks.json` for instant BM25 sparse index initialization.
+- **Dense Embeddings**: Generates 384-dimensional dense vectors using `sentence-transformers/all-MiniLM-L6-v2` and persists them to a serverless Pinecone index.
+- **Hybrid Threshold Retriever**: `HybridThresholdRetriever` combines the sparse `BM25Retriever` with Pinecone dense similarity search via `EnsembleRetriever(weights=[0.5, 0.5])`. If the top Pinecone cosine similarity score is below `0.78`, the query is flagged as out-of-domain.
+
+### 2. Multi-Turn Conversational Memory
+- **Persistent SQLite Storage (`src/chat_history.py`)**: Uses a thread-safe local SQLite database with WAL mode to record every user prompt and bot response under a unique `session_id`.
+- **History-Aware Retrieval Chain (`src/rag_pipeline.py`)**:
+  1. LangChain's `create_history_aware_retriever` passes the chat history and latest user query to Sarvam AI with a contextualization prompt.
+  2. The LLM reformulates pronouns and conversational references into a standalone query.
+  3. The standalone query is sent to `HybridThresholdRetriever`, ensuring follow-up queries retrieve the correct context passages.
+
+### 3. Clinical Guardrails Suite
+- **Input Guardrails (`Guardrails/input/`)**:
+  - `emergency.py`: Regex and keyword heuristics scan for 30+ critical red-flag terms (e.g. *chest pain, shortness of breath, slurred speech, suicidal ideation*). If detected, returns immediate emergency triage instructions (911/112/999).
+  - `dosage.py`: Intercepts prompts seeking exact drug dosages or medication administration amounts.
+  - `injection.py`: Defends against prompt injection, roleplay attacks, and system prompt exfiltration.
+  - `pii.py`: Identifies and redacts Social Security numbers, phone numbers, email addresses, and names using regex and contextual entity masks before LLM processing.
+- **Output Guardrails (`Guardrails/output/`)**:
+  - `safety.py`: Audits generated responses to ensure the model does not issue prescription orders, recommend lethal dosages, or provide unmonitored home treatment advice.
+  - `disclaimer.py`: Appends a mandatory standardized medical disclaimer to responses discussing clinical diagnoses or treatments.
+
+### 4. Real-Time Token & Context Streaming
+- **FastAPI Streaming Protocol**: The `/get` endpoint streams chunks using Server-Sent Events (SSE) formatting:
+  - `[CONTEXT] <json_array>`: Broadcasts retrieved textbook passage text, source paths, and metadata.
+  - `[ANSWER] <token>`: Live streaming text tokens from the Sarvam AI generator.
+  - `[ERROR] <message>`: Signal for caught exceptions.
+  - `[DONE]`: Completion signal.
+
+### 5. Clinical Web UI & Citations Explorer
+- **Adaptive Layout**: 3-column architecture (Sidebar, Main Viewport, Retrieved Context drawer) with strict `height: 100dvh` viewport boundaries to prevent input container clipping.
+- **Consolidated Citation Pills**: Aggregates passages from identical sources into clean badges (e.g. `📖 The Gale Encyclopedia of Medicine · 7 Verified Passages`).
+- **Interactive Context Drawer**: Displays individual source passages with real-time relevance match bars. Clicking a citation pill focuses and highlights the corresponding excerpt in the side panel.
+- **Voice I/O**: Integrated Speech-to-Text (microphone button) and Text-to-Speech (read-aloud button).
 
 ---
 
 ## 💻 Tech Stack
 
-- **Framework**: LangChain `v0.3+`, FastAPI, Uvicorn, Pydantic, Jinja2.
-- **LLM Provider**: Groq API (`openai/gpt-oss-120b` / `llama-3.3-70b-versatile`).
-- **Vector Database**: Pinecone (`serverless`, cosine distance, 384 dimensions).
-- **Embeddings**: HuggingFace `sentence-transformers/all-MiniLM-L6-v2`.
-- **Sparse Retrieval**: `rank_bm25` (`BM25Retriever`).
-- **Cross-Encoder Reranker**: `FlashRank` (`ms-marco-MiniLM-L-6-v2`).
-- **Evaluation**: RAGAS Framework (`faithfulness`, `answer_relevancy`, `context_precision`, `context_recall`).
-- **Cloud Storage**: AWS S3 (`boto3`).
+| Component | Technology | Description |
+|---|---|---|
+| **LLM Generator** | [Sarvam AI](https://www.sarvam.ai/) (`sarvam-105b`) | High-accuracy clinical text generation |
+| **Orchestration** | [LangChain](https://python.langchain.com/) `v0.3+` | RAG chains, history-aware retrievers, document combiners |
+| **Dense Vector DB** | [Pinecone Serverless](https://www.pinecone.io/) | Dense vector indexing (384-dim, Cosine Distance) |
+| **Embeddings** | Hugging Face `all-MiniLM-L6-v2` | Dense sentence embedding model |
+| **Sparse Retrieval** | `rank_bm25` | Sparse keyword index for hybrid search |
+| **Memory Store** | SQLite | Thread-safe multi-turn chat history persistence |
+| **Web Server** | FastAPI & Uvicorn | Asynchronous token & context streaming server |
+| **Frontend** | Vanilla HTML5 / CSS3 / JavaScript | Responsive clinical interface (Dark/Light modes) |
+| **Evaluation** | [RAGAS](https://github.com/explodinggradients/ragas) | Faithfulness, Answer Relevancy, Context Precision/Recall |
+| **Cloud Storage** | AWS S3 (`boto3`) | Cloud PDF document storage and synchronization |
 
 ---
 
-## ⚙️ Setup & Installation
+## ⚙️ Environment Variables
 
-### 1. Prerequisites
-- Python 3.10+
-- Pinecone API Key ([pinecone.io](https://www.pinecone.io/))
-- Groq API Key ([console.groq.com](https://console.groq.com/))
-- AWS S3 Bucket Credentials *(Optional: falls back to local `Data/` folder)*
-
-### 2. Clone & Install Dependencies
-```bash
-git clone https://github.com/arup04/Medical-Chatbot-Project.git
-cd Medical-Chatbot-Project
-
-# Switch to the reranking_improvements branch
-git checkout reranking_improvements
-
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install required packages
-pip install -r requirements.txt
-```
-
-### 3. Environment Variables
 Create a `.env` file in the root directory:
+
 ```env
-# Required API Keys
+# ==============================================================================
+# MediAid AI Configuration
+# ==============================================================================
+
+# Required: Vector Database & LLM Provider API Keys
 PINECONE_API_KEY="your-pinecone-api-key"
-GROQ_API_KEY="your-groq-api-key"
+SARVAM_API_KEY="your-sarvam-api-key"
 
-# LLM Model Configuration (Optional)
-GROQ_MODEL_NAME="openai/gpt-oss-120b"
+# Optional: Sarvam Model Name (Defaults to sarvam-105b)
+SARVAM_MODEL_NAME="sarvam-105b"
 
-# AWS S3 Storage Configuration (Optional)
+# Optional: AWS S3 Storage (Falls back to local Data/ directory if omitted)
 AWS_ACCESS_KEY_ID="your-aws-access-key-id"
 AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
 AWS_DEFAULT_REGION="us-east-1"
@@ -152,56 +247,109 @@ AWS_FILE_KEY="Medical_book.pdf"
 
 ---
 
-## 🚀 Running the Pipeline
+## 📦 Installation & Setup
+
+### 1. Prerequisites
+- Python 3.10 or higher
+- Git
+- Active Pinecone and Sarvam AI accounts
+
+### 2. Clone the Repository
+```bash
+git clone https://github.com/arup04/Medical-Chatbot-Project.git
+cd Medical-Chatbot-Project
+```
+
+### 3. Create & Activate Virtual Environment
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Linux / macOS
+python3 -m venv venv
+source venv/bin/activate
+```
+
+### 4. Install Dependencies
+```bash
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+---
+
+## 🚀 Running the Application
 
 ### Step 1: Ingestion & Vector Indexing
-Download/load the PDF, chunk text, cache chunks locally for BM25, and index vectors in Pinecone:
+Download/load the PDF, split chunks, cache BM25 sparse index, and push dense embeddings to Pinecone:
 ```bash
 python store_index.py
 ```
 
-### Step 2: Run RAGAS Benchmark Evaluation
-Evaluate RAG generation & cross-encoder retrieval quality:
-```bash
-python evaluate_rag.py
-```
-
-### Step 3: Run the Web Application
-Launch the FastAPI application:
+### Step 2: Launch the FastAPI Web Server
+Start the development server with hot-reloading:
 ```bash
 python app.py
 ```
-Or run directly via Uvicorn:
+Or start directly with Uvicorn:
 ```bash
 uvicorn app:app --host 0.0.0.0 --port 8080 --reload
 ```
-Navigate to **`http://localhost:8080`** in your browser to chat with MediAid AI.
+
+### Step 3: Open in Browser
+Navigate to **`http://localhost:8080`** to interact with MediAid AI.
 
 ---
 
-## 📊 RAGAS Evaluation Baseline Scores
+## 🐳 Running with Docker
 
-Evaluation results with Hybrid Search + FlashRank Reranking:
+You can containerize and run the complete application using Docker:
 
-| Metric | Score | Target | Status | Description |
+### 1. Build the Docker Image
+```bash
+docker build -t mediaid-ai:latest .
+```
+
+### 2. Run the Container
+```bash
+docker run -d \
+  --name mediaid-app \
+  -p 8080:8080 \
+  --env-file .env \
+  mediaid-ai:latest
+```
+
+The container includes built-in healthchecks to verify server availability. Access the UI at **`http://localhost:8080`**.
+
+## 🌐 API Endpoints Reference
+
+| Method | Endpoint | Parameters | Description |
+|---|---|---|---|
+| `GET` | `/` | None | Renders the primary clinical chatbot web application. |
+| `POST` | `/get` | `msg` (string, Form), `session_id` (string, Form) | Streams LLM response tokens and retrieved context metadata via SSE. |
+| `POST` | `/clear_history` | `session_id` (string, Form) | Clears conversation history for the specified session in SQLite. |
+
+---
+
+## 📊 RAGAS Evaluation Benchmarks
+
+The pipeline was benchmarked using the **RAGAS framework** across multiple iterations (Dense-only, Hybrid BM25+Dense, and Hybrid + FlashRank Reranking):
+
+| Metric | Score | Target Threshold | Benchmark Status | Definition |
 |---|---|---|---|---|
-| **Faithfulness** | `0.8932` | > 0.80 | ✅ **Passed** | Factual consistency of response against retrieved context. |
-| **Answer Relevancy** | `0.9363` | > 0.80 | ✅ **Passed** | Direct alignment of the response with user query intent. |
-| **Context Precision** | `0.7778` | > 0.70 | ✅ **Passed** | Signal-to-noise ratio of top reranked context chunks. |
-| **Context Recall** | `1.0000` | > 0.80 | ✅ **Passed** | Complete retrieval of ground-truth reference facts. |
+| **Faithfulness** | **`0.8932`** | > 0.80 | ✅ **Passed** | Measures factual consistency of generated answers against retrieved context. |
+| **Answer Relevancy** | **`0.9363`** | > 0.80 | ✅ **Passed** | Evaluates how directly the answer addresses the user's initial question. |
+| **Context Precision** | **`0.7778`** | > 0.70 | ✅ **Passed** | Evaluates the signal-to-noise ratio in top retrieved context chunks. |
+| **Context Recall** | **`1.0000`** | > 0.80 | ✅ **Passed** | Measures whether all ground-truth reference facts were retrieved. |
 
----
-
-## 🔮 Future Roadmap
-
-Upcoming feature branches:
-1. **Conversational Memory (`conversational_memory`)**: Stateful multi-turn chat history management, SQLite/PostgreSQL persistence (`src/database.py`), session API routes, and history-aware retrieval chains.
+*Evaluation scripts, baseline datasets, and comparison audit CSVs are located in [`Evaluation/`](./Evaluation/).*
 
 ---
 
 ## 📜 License & Author
 
-Distributed under the MIT License. See `LICENSE` for details.
+Distributed under the **MIT License**. See `LICENSE` for details.
 
-- **Author**: Arup Das
+- **Author**: [Arup Das](https://github.com/arup04)
 - **Repository**: [arup04/Medical-Chatbot-Project](https://github.com/arup04/Medical-Chatbot-Project)

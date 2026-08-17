@@ -163,7 +163,7 @@ function loadActiveSession() {
         messagesContainer.innerHTML = "";
         
         session.messages.forEach(msg => {
-            renderMessage(msg.text, msg.sender);
+            renderMessage(msg.text, msg.sender, false, msg.contexts || null);
         });
         
         const botMessages = session.messages.filter(m => m.sender === "bot");
@@ -284,8 +284,84 @@ function injectMessageActions(row, bubbleElement, text) {
     row.appendChild(actions);
 }
 
+// --- Clean Source Name Helper ---
+function getCleanSourceName(sourcePath) {
+    if (!sourcePath) return "The Gale Encyclopedia of Medicine";
+    const base = sourcePath.split(/[\\/]/).pop().replace(/\.pdf$/i, '');
+    if (base.toLowerCase().includes("medical_book") || base.toLowerCase().includes("gale")) {
+        return "The Gale Encyclopedia of Medicine";
+    }
+    return base.replace(/_/g, ' ');
+}
+
+// --- Citation Formatting Helpers ---
+function formatCitationsHTML(contexts) {
+    if (!contexts || contexts.length === 0) return "";
+    
+    // Group documents by clean source title
+    const sourceGroups = {};
+    contexts.forEach((doc, idx) => {
+        const rawSource = doc.metadata?.source || "Medical_book";
+        const cleanName = getCleanSourceName(rawSource);
+        const page = doc.metadata?.page ? `Pg ${doc.metadata.page}` : null;
+        
+        if (!sourceGroups[cleanName]) {
+            sourceGroups[cleanName] = {
+                name: cleanName,
+                count: 0,
+                pages: new Set(),
+                firstIndex: idx
+            };
+        }
+        sourceGroups[cleanName].count += 1;
+        if (page) sourceGroups[cleanName].pages.add(page);
+    });
+
+    const groupKeys = Object.keys(sourceGroups);
+    if (groupKeys.length === 0) return "";
+
+    let html = `<div class="message-citations-block">`;
+    html += `<div class="citation-block-header">`;
+    html += `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>`;
+    html += `<span>Cited Medical Evidence</span>`;
+    html += `</div>`;
+    html += `<div class="citation-pills-list">`;
+    
+    groupKeys.forEach((key) => {
+        const group = sourceGroups[key];
+        const pageInfo = group.pages.size > 0 
+            ? ` · ${Array.from(group.pages).join(', ')}` 
+            : ` · ${group.count} Verified Passage${group.count > 1 ? 's' : ''}`;
+        html += `<span class="citation-pill" data-source-index="${group.firstIndex}" title="Click to view retrieved textbook passages in context panel">📖 ${group.name}${pageInfo}</span>`;
+    });
+    
+    html += `</div></div>`;
+    return html;
+}
+
+function attachCitationClickHandlers(bubble, contexts) {
+    if (!bubble || !contexts) return;
+    bubble.querySelectorAll(".citation-pill").forEach(pill => {
+        pill.addEventListener("click", (e) => {
+            e.stopPropagation();
+            renderCitations(contexts);
+            focusCitationInPanel(0);
+            showToast("Retrieved textbook passages displayed in context panel.", "success");
+        });
+    });
+}
+
+function focusCitationInPanel(index = 0) {
+    const cards = document.querySelectorAll(".source-card");
+    if (cards && cards.length > index) {
+        cards.forEach(c => c.classList.remove("highlighted-card"));
+        cards[index].classList.add("highlighted-card");
+        cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
 // --- Render Message Bubbles ---
-function renderMessage(text, sender, isSkeleton = false) {
+function renderMessage(text, sender, isSkeleton = false, contexts = null) {
     const row = document.createElement("div");
     row.classList.add(sender === "bot" ? "bot-row" : "user-row");
 
@@ -301,7 +377,14 @@ function renderMessage(text, sender, isSkeleton = false) {
             </div>
         `;
     } else {
-        msgBubble.innerHTML = formatMessageText(text);
+        let contentHtml = formatMessageText(text);
+        if (sender === "bot" && contexts && contexts.length > 0) {
+            contentHtml += formatCitationsHTML(contexts);
+        }
+        msgBubble.innerHTML = contentHtml;
+        if (sender === "bot" && contexts && contexts.length > 0) {
+            attachCitationClickHandlers(msgBubble, contexts);
+        }
         injectMessageActions(row, msgBubble, text);
     }
 
@@ -322,42 +405,10 @@ function renderMessage(text, sender, isSkeleton = false) {
 
 function formatMessageText(text) {
     return text
+        .replace(/---/g, '<hr style="border: none; border-top: 1px solid var(--border-color, rgba(255,255,255,0.12)); margin: 12px 0 8px 0;">')
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/\n/g, '<br>');
-}
-
-// --- Highlight Text inside Chat response ---
-function highlightTextInBubble(keyword) {
-    // Clear previous highlights
-    document.querySelectorAll(".highlight-context").forEach(hl => {
-        hl.outerHTML = hl.innerHTML; // Strip wrappers
-    });
-    
-    if (!keyword || keyword.trim().length < 5) return;
-    
-    // Extract a few unique search query terms
-    const cleanKeyword = keyword.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"").toLowerCase();
-    const searchWords = cleanKeyword.split(" ").filter(w => w.length > 4);
-    
-    if (searchWords.length === 0) return;
-    
-    const botMessages = document.querySelectorAll(".bot-msg");
-    if (botMessages.length === 0) return;
-    const latestBubble = botMessages[botMessages.length - 1];
-    
-    let htmlContent = latestBubble.innerHTML;
-    
-    // Wrap sentences containing key search words
-    searchWords.forEach(word => {
-        const regex = new RegExp(`(\\b${word}\\w*\\b)`, 'gi');
-        htmlContent = htmlContent.replace(regex, '<span class="highlight-context">$1</span>');
-    });
-    
-    latestBubble.innerHTML = htmlContent;
-    
-    // Add dynamic scroll tracking
-    latestBubble.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    showToast("Highlighted context matches in chat answer.", "success");
 }
 
 // --- Citations Panel Rendering ---
@@ -375,21 +426,21 @@ function renderCitations(contexts) {
     textChunksList.innerHTML = "";
     
     contexts.forEach((doc, idx) => {
-        const sourcePath = doc.metadata.source || "Gale Encyclopedia of Medicine";
-        const filename = sourcePath.split(/[\\/]/).pop();
-        const pageNum = doc.metadata.page ? `Page ${doc.metadata.page}` : "N/A";
+        const cleanName = getCleanSourceName(doc.metadata?.source);
+        const pageNum = doc.metadata?.page ? `Page ${doc.metadata.page}` : `Passage #${idx + 1}`;
         const relevance = Math.round(98 - (idx * 5) - (Math.random() * 2));
         
         // Source card in citation sidebar
         const sourceCard = document.createElement("div");
         sourceCard.classList.add("source-card");
         sourceCard.style.cursor = "pointer";
-        sourceCard.title = "Click to highlight matching terms in chatbot answer";
+        sourceCard.title = "Click to inspect passage excerpt";
         sourceCard.innerHTML = `
-            <span class="source-title">📖 ${filename}</span>
+            <span class="source-title">📖 ${cleanName}</span>
+            <span class="source-meta">${pageNum}</span>
             <div class="relevance-score-wrapper">
                 <div class="relevance-score-text">
-                    <span>Relevance</span>
+                    <span>Relevance Match</span>
                     <span>${relevance}%</span>
                 </div>
                 <div class="score-bar-bg">
@@ -398,9 +449,16 @@ function renderCitations(contexts) {
             </div>
         `;
         
-        // Clicking source card highlights context overlap in response bubble
+        // Clicking source card expands and highlights text chunk excerpt
         sourceCard.addEventListener("click", () => {
-            highlightTextInBubble(doc.page_content);
+            referencesToggleBtn.classList.add("active");
+            referencesCollapsibleBody.classList.add("active");
+            const chunkCards = textChunksList.querySelectorAll(".chunk-card");
+            if (chunkCards && chunkCards[idx]) {
+                chunkCards.forEach(c => c.classList.remove("active-chunk"));
+                chunkCards[idx].classList.add("active-chunk");
+                chunkCards[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         });
         
         sourcesList.appendChild(sourceCard);
@@ -413,16 +471,10 @@ function renderCitations(contexts) {
         // Raw text chunk details
         const chunkCard = document.createElement("div");
         chunkCard.classList.add("chunk-card");
-        chunkCard.style.cursor = "pointer";
-        chunkCard.title = "Click to highlight match in chatbot answer";
         chunkCard.innerHTML = `
-            <div class="chunk-hdr">Source: ${filename} [Relevance: ${relevance}%]</div>
+            <div class="chunk-hdr">Source: ${cleanName} [${pageNum} · Relevance: ${relevance}%]</div>
             <p>${doc.page_content}</p>
         `;
-        
-        chunkCard.addEventListener("click", () => {
-            highlightTextInBubble(doc.page_content);
-        });
         
         textChunksList.appendChild(chunkCard);
     });
@@ -458,6 +510,7 @@ async function handleFormSubmit() {
     
     const formData = new FormData();
     formData.append("msg", text);
+    formData.append("session_id", activeSessionId || "default_session");
     
     try {
         const response = await fetch("/get", {
@@ -517,13 +570,26 @@ async function handleFormSubmit() {
         // If LLM returned no answer text
         if (isFirstToken) {
             botBubble.innerHTML = "I am sorry, I couldn't formulate a response. Please try again.";
+        } else {
+            let finalHtml = formatMessageText(botResponseText);
+            if (currentRetrievedContexts && currentRetrievedContexts.length > 0) {
+                finalHtml += formatCitationsHTML(currentRetrievedContexts);
+            }
+            botBubble.innerHTML = finalHtml;
+            if (currentRetrievedContexts && currentRetrievedContexts.length > 0) {
+                attachCitationClickHandlers(botBubble, currentRetrievedContexts);
+            }
         }
         
         // Inject action panel onto row
         const row = botBubble.closest(".bot-row");
         injectMessageActions(row, botBubble, botResponseText);
         
-        session.messages.push({ text: botResponseText, sender: "bot" });
+        session.messages.push({ 
+            text: botResponseText, 
+            sender: "bot", 
+            contexts: currentRetrievedContexts 
+        });
         session.contexts.push(currentRetrievedContexts);
         saveSessions();
         renderSidebarSessions();
