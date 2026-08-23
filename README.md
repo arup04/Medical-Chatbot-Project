@@ -25,6 +25,7 @@ An end-to-end **Clinical Decision Support & Patient Education AI Assistant** bui
 - [Environment Variables](#-environment-variables)
 - [Installation & Setup](#-installation--setup)
 - [Running the Application](#-running-the-application)
+- [Running Tests](#-running-tests)
 - [Running with Docker](#-running-with-docker)
 - [API Endpoints Reference](#-api-endpoints-reference)
 - [RAGAS Evaluation Benchmarks](#-ragas-evaluation-benchmarks)
@@ -57,11 +58,12 @@ An end-to-end **Clinical Decision Support & Patient Education AI Assistant** bui
 
 ```text
 Medical-Chatbot-Project/
-├── Data/                             # Local medical textbook storage
-│   └── Medical_book.pdf              # The Gale Encyclopedia of Medicine (Source Reference)
+├── Data/                             # Local medical textbook & cached sparse index
+│   ├── Medical_book.pdf              # The Gale Encyclopedia of Medicine (Source Reference)
+│   ├── chat_history.db               # SQLite multi-turn conversation memory database
+│   └── preprocessed_chunks.json      # Cached chunks for local BM25 index
 ├── Evaluation/                       # RAGAS evaluation suite & performance benchmarks
 │   ├── final_rag_application_audit_sarvam.csv
-│   ├── preprocessed_chunks.json      # Cached chunks for local BM25 index
 │   ├── rag_evaluation_sarvam.ipynb   # Resumable Sarvam AI benchmark notebook
 │   ├── rag_stage_comparison_sarvam.csv
 │   ├── ragas_medical_evaluation_dataset.csv
@@ -102,10 +104,17 @@ Medical-Chatbot-Project/
 │   └── style.css                     # Responsive clinical SaaS styling (Dark/Light themes)
 ├── templates/                        # Frontend HTML templates
 │   └── chat.html                     # Clinical chatbot interface
+├── tests/                            # Unit test suites for safety guardrails & memory
+│   ├── test_chat_history.py          # SQLite WAL memory & sliding window verification
+│   ├── test_dosage_guardrail.py      # Medication dosage query blocking tests
+│   ├── test_emergency_guardrail.py   # Critical red-flag emergency triage tests
+│   ├── test_input_pipeline.py        # Composite input guardrail & PII sanitization tests
+│   └── test_output_pipeline.py       # Prescription & toxic response defense tests
 ├── .dockerignore                     # Docker build exclusion rules
 ├── .env                              # Environment variables (API Keys, Configs)
 ├── .gitignore                        # Git ignore patterns (*.db, *.sqlite, checkpoints)
 ├── app.py                            # FastAPI application server & streaming endpoints
+├── architecture_diagram.excalidraw   # System architecture design diagram
 ├── Dockerfile                        # Containerized build & deployment specification
 ├── requirements.txt                  # Python dependencies declaration
 ├── setup.py                          # Package installation configuration
@@ -119,7 +128,7 @@ Medical-Chatbot-Project/
 
 ### 1. Data Ingestion & Hybrid Retrieval
 - **PDF Extraction**: Ingests textbook PDFs dynamically from AWS S3 storage buckets (via `boto3`) with automatic fallback to local `Data/Medical_book.pdf`.
-- **Text Chunking**: Uses `RecursiveCharacterTextSplitter` with `chunk_size=500` and `chunk_overlap=20`. Preprocessed chunks are cached in `Evaluation/preprocessed_chunks.json` for instant BM25 sparse index initialization.
+- **Text Chunking**: Uses `RecursiveCharacterTextSplitter` with `chunk_size=500` and `chunk_overlap=20`. Preprocessed chunks are cached in `Data/preprocessed_chunks.json` for instant BM25 sparse index initialization.
 - **Dense Embeddings**: Generates 384-dimensional dense vectors using `sentence-transformers/all-MiniLM-L6-v2` and persists them to a serverless Pinecone index.
 - **Hybrid Threshold Retriever**: `HybridThresholdRetriever` combines the sparse `BM25Retriever` with Pinecone dense similarity search via `EnsembleRetriever(weights=[0.5, 0.5])`. If the top Pinecone cosine similarity score is below `0.78`, the query is flagged as out-of-domain.
 
@@ -250,6 +259,30 @@ uvicorn app:app --host 0.0.0.0 --port 8080 --reload
 
 ### Step 3: Open in Browser
 Navigate to **`http://localhost:8080`** to interact with MediAid AI.
+
+---
+
+## 🧪 Running Tests
+
+The repository includes standalone unit test suites covering the clinical guardrails, PII sanitization, dosage detection, emergency triage, and SQLite multi-turn conversational memory:
+
+```bash
+# Run test suites individually:
+python tests/test_chat_history.py
+python tests/test_dosage_guardrail.py
+python tests/test_emergency_guardrail.py
+python tests/test_input_pipeline.py
+python tests/test_output_pipeline.py
+```
+
+Or run all test suites in a single command:
+```bash
+# Windows (PowerShell)
+Get-ChildItem tests/test_*.py | ForEach-Object { python $_.FullName }
+
+# Linux / macOS (Bash)
+for test in tests/test_*.py; do python "$test"; done
+```
 
 ---
 
