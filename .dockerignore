@@ -59,6 +59,7 @@ research/
 
 # Screenshots, Demos, and Media
 *.png
+!static/app.png
 *.jpg
 *.jpeg
 demo_results/
