@@ -9,6 +9,7 @@ import asyncio
 
 # Modular pipeline imports
 from src.vector_store import download_hugging_face_embeddings, get_vector_store
+from src.hybrid_retriever import get_hybrid_retriever
 from src.rag_pipeline import create_rag_chain
 from src.chat_history import add_message, get_chat_history, clear_session_history
 from Guardrails.input import run_input_guardrails
@@ -24,53 +25,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Chatbot setup using modular pipeline
-import os
-from langchain_community.retrievers import BM25Retriever
-from langchain.retrievers import EnsembleRetriever
-from langchain_core.documents import Document
-
 embeddings = download_hugging_face_embeddings()
 index_name = "medibot"
 vector_store = get_vector_store(index_name=index_name, embeddings=embeddings)
-
-# 1. Load cached chunks for local BM25 sparse index
-chunks_path = "evaluation/preprocessed_chunks.json"
-cached_docs = []
-if os.path.exists(chunks_path):
-    try:
-        with open(chunks_path, "r", encoding="utf-8") as f:
-            cached_data = json.load(f)
-        cached_docs = [Document(page_content=d["page_content"], metadata=d["metadata"]) for d in cached_data]
-    except Exception as e:
-        print(f"Failed to load cached chunks: {e}")
-
-from src.hybrid_retriever import HybridThresholdRetriever
-
-# 2. Build retrievers
-pinecone_retriever = vector_store.as_retriever(
-    search_type="similarity_score_threshold", 
-    search_kwargs={"score_threshold": 0.78, "k": 6}
-)
-
-if cached_docs:
-    bm25_retriever = BM25Retriever.from_documents(cached_docs)
-    bm25_retriever.k = 6
-    # Combine BM25 sparse search and Pinecone dense search
-    ensemble_retriever = EnsembleRetriever(
-        retrievers=[bm25_retriever, pinecone_retriever],
-        weights=[0.5, 0.5]
-    )
-    base_retriever = HybridThresholdRetriever(
-        ensemble_retriever=ensemble_retriever,
-        pinecone_retriever=pinecone_retriever
-    )
-else:
-    base_retriever = pinecone_retriever
-
-# 2. Assign winning Stage 3 Hybrid Retriever
-retriever = base_retriever
-
-# 3. Create the RAG chain
+retriever = get_hybrid_retriever(vector_store=vector_store)
 rag_chain = create_rag_chain(retriever=retriever)
 
 async def stream_response(msg: str, session_id: str = "default_session"):
